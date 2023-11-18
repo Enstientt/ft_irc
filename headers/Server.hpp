@@ -9,6 +9,8 @@
 #include <poll.h>
 #include <fcntl.h>
 #include <vector>
+#include "head.hpp"
+#include <sstream>
 #define PORT 6666
 #define MAX_CLIENTS 10
 
@@ -87,6 +89,78 @@ public:
         }
     }
 
+    void pass(std::string password, std::string command, Client &client)
+{
+    if (client.auth() == false && client.get_pwd().empty())
+    {
+        if (password.empty())
+        {
+            send(client.getSocket(), ERR_NEEDMOREPARAMS(client.get_nickname(), "PASS").c_str(), ERR_NEEDMOREPARAMS(client.get_nickname(), "PASS").length(), 0);
+        }
+        else if (password != "pass")
+            send(client.getSocket(), ERR_PASSWDMISMATCH(client.get_nickname()).c_str(), ERR_PASSWDMISMATCH(client.get_nickname()).length(), 0);
+        else
+        {
+            client.set_pwd(password);
+        }
+    }
+}
+
+bool nick_already_exist(std::string nick)
+{
+    std::vector<Client>::iterator it = _clients.begin();
+    if (it == _clients.end())
+        return false;
+    else{
+        for (; it!=_clients.end() ;it++)
+        {
+            if (it->get_nickname() == nick)
+            {
+                std::cout<<"nick already exist";
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void nick(std::string nick , Client &client, int flag )
+{
+    //if not authenticate just processd with authentication
+    if (!client.get_pwd().empty())
+    {
+        if (client.auth() == false && nick_already_exist(nick) == false)
+        {
+            client.set_nickName(nick);
+        }
+        else if ( client.auth() == true)
+        {
+            //change the nick with the new one;
+        }
+    }
+}
+
+void user(std::string user, Client &client)
+{
+    std::cout<<user;
+}
+void execute_command(Client &client)
+    {
+
+        std::string command = client.getMessage();
+        std::string cmd;
+        std::string value;
+        std::istringstream iss(command);
+        iss >> cmd >> value ;
+
+    if (cmd == "PASS")
+        pass(value, command, client);
+    else if (cmd == "NICK")
+        nick(value, client, 0);
+    else if (cmd == "USER")
+        user(value , client);
+    }
+
 private:
     int serverSocket;
     std::vector<Client> _clients;
@@ -140,7 +214,8 @@ private:
                 {
                     if (it->getSocket() == fds[index].fd)
                     {
-                        it->setMessage(str); 
+                        it->setMessage(str);
+                        execute_command(*it);
                     }
                 }
                 

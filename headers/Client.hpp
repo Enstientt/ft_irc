@@ -29,13 +29,53 @@ public:
     const std::string getMessage(){
         return this->message;
     }
+    bool auth()
+    {
+        return is_authenticate;
+    }
+    void setAuth(bool at)
+    {
+        this->is_authenticate = at;
+    }
+    int getSocket()
+    {
+        return this->socket;
+    }
+    void set_nickName(std::string nick)
+    {
+        this->nickName = nick;
+    }
+    std::string get_nickname()
+    {
+        return this->nickName;
+    }
+    void set_user(std::string user)
+    {
+        this->userName = user;
+    }
+    std::string get_user()
+    {
+        return this->userName;
+    }
+    std::string get_pwd()
+    {
+        return this->pwd;
+    }
 
+    void set_pwd(std::string pwd)
+    {
+        this->pwd = pwd;
+    }
     // Add more member functions or data members as needed
 
 private:
     int socket;
     sockaddr_in address;
     std::string message;
+    std::string nickName;
+    std::string userName;
+    bool is_authenticate;
+    std::string pwd;
     // Add more data members as needed
 };
 
