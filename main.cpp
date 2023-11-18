@@ -3,8 +3,32 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <poll.h>
+#include <fcntl.h>
+#include <vector>
 #define PORT 6666
 #define MAX_CLIENTS 10
+
+class Client {
+public:
+    Client(int socket, const sockaddr_in& address) : socket(socket), address(address) {
+        // Perform any additional initialization for a new client
+    }
+
+    int getSocket() const {
+        return socket;
+    }
+
+    const sockaddr_in& getAddress() const {
+        return address;
+    }
+
+    // Add more member functions or data members as needed
+
+private:
+    int socket;
+    sockaddr_in address;
+    // Add more data members as needed
+};
 
 class Server {
 public:
@@ -15,7 +39,19 @@ public:
             std::cout << "Error in creating the socket" << std::endl;
             exit(EXIT_FAILURE);
         }
-
+        //set socket opt
+        int opt = 1;
+        if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))==-1)
+        {
+            perror("setsockopt");
+            exit(EXIT_FAILURE);
+        }
+        //non-block fd
+        if (fcntl(serverSocket, F_SETFD, O_NONBLOCK) ==-1)
+        {
+            perror("fcntl");
+            exit(EXIT_FAILURE);
+        }
         // Bind the socket to a specific IP and port
         sockaddr_in sock_add;
         sock_add.sin_family = AF_INET;
@@ -70,7 +106,9 @@ public:
 
 private:
     int serverSocket;
+    std::vector<Client> _clients;
     struct pollfd fds[MAX_CLIENTS + 1];
+
 
     void acceptConnection() {
         sockaddr_in client_add;
@@ -97,18 +135,30 @@ private:
             std::cout << "Connection limit reached. Rejecting new connection." << std::endl;
             close(newSocket);
         }
+        _clients.emplace_back(newSocket, client_add);
     }
 
     void handleClient(int index) {
-        char buffer[1];
+        char buffer[1024];
         // Attempt to receive 1 byte from the client
         int bytesRead = recv(fds[index].fd, buffer, sizeof(buffer), MSG_PEEK);
-        if (bytesRead == 0 || (bytesRead == -1 && (errno == EPIPE || errno == ECONNRESET))) {
+        if (bytesRead > 0)
+        {
+            buffer[bytesRead] = '\0';
+            recv(fds[index].fd, buffer, bytesRead, 0);
+            std::string str(buffer);
+            //the logic here
+            std::cout << "client "<< index<< " :"<< str;
+        }
+        else if (bytesRead == 0 || (bytesRead == -1 && (errno == EPIPE || errno == ECONNRESET))) {
             // Client has closed the connection
             std::cout << "Client " << index << " disconnected." << std::endl;
             close(fds[index].fd);
             fds[index].fd = -1;
         }
+        else
+            perror("recv");
+
     }
 };
 
