@@ -133,10 +133,11 @@ void nick(std::string nick , Client &client, int flag )
         {
             client.set_nickName(nick);
         }
-        else if ( client.auth() == true)
-        {
-            //change the nick with the new one;
-        }
+    }
+    //changing the nickname
+    else if ( client.auth() == true)
+    {
+        
     }
 }
 
