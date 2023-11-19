@@ -116,7 +116,8 @@ bool nick_already_exist(std::string nick)
         {
             if (it->get_nickname() == nick)
             {
-                std::cout<<"nick already exist";
+                std::string message = ": 433 "+ nick + " :Nickname is already in use.\r\n";
+                send(it->getSocket(), message.c_str(), message.length(), 0);
                 return true;
             }
         }
