@@ -49,9 +49,9 @@ public:
     {
         return this->nickName;
     }
-    void set_user(std::string user)
+    void set_user(std::string realName)
     {
-        this->userName = user;
+        this->realname = realName;
     }
     std::string get_user()
     {
@@ -73,6 +73,8 @@ private:
     sockaddr_in address;
     std::string message;
     std::string nickName;
+    std::string realname;
+    std::string hostName;
     std::string userName;
     bool is_authenticate;
     std::string pwd;
