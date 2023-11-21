@@ -1,7 +1,7 @@
 #ifndef head_hpp
 #define head_hpp
 
-#define user_forma(nickname, username) (":" + nickname + "!" + username + "@localhost")
+#define user_forma(nickname, username, adress) (":" + nickname + "!" + username + "@" + adress)
 #define ERR_UNKNOWNCOMMAND(command) (": 421 " + command + " :Unknown command\r\n")
 #define ERR_NONICKNAMEGIVEN ": 431 :There is no nickname.\r\n"
 #define ERR_ERRONEUSNICKNAME(client, nickname) (": 432 " + client + " " + nickname + " :Erroneus nickname\r\n")

@@ -55,7 +55,7 @@ public:
     }
     std::string get_user()
     {
-        return this->userName;
+        return this->realname;
     }
     std::string get_pwd()
     {

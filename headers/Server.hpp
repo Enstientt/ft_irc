@@ -116,8 +116,6 @@ bool nick_already_exist(std::string nick, Client &client)
         {
             if (it->get_nickname() == nick)
             {
-                std::string message = ": 433 "+ nick + " :Nickname is already in use.\r\n";
-                send(client.getSocket(), message.c_str(), message.length(), 0);
                 return true;
             }
         }
@@ -127,6 +125,7 @@ bool nick_already_exist(std::string nick, Client &client)
 
 void nick(std::string nick , Client &client, int flag )
 {
+    std::string message;
     //if not authenticate just processd with authentication
     if (!client.get_pwd().empty() && client.auth() == false)
     {
@@ -134,34 +133,80 @@ void nick(std::string nick , Client &client, int flag )
         {
             client.set_nickName(nick);
         }
+        else
+        {
+            message = ": 433 "+ nick + " :Nickname is already in use.\r\n";
+            send(client.getSocket(), message.c_str(), message.length(), 0);
+        }
     }
     //changing the nickname
-    else if ( client.auth() == true && nick_already_exist(nick, client) == false )
+    else if ( client.auth() == true)
     {
-        std::string message = ": nickname "+ client.get_nickname() + " change to  " + nick +"\r\n";
-        client.set_nickName(nick);
-        send(client.getSocket(), message.c_str(), message.length(), 0);
+        if (nick_already_exist(nick, client) == false)
+        {
+            message = ": nickname "+ client.get_nickname() + " change to  " + nick +"\r\n";
+            client.set_nickName(nick);
+            send(client.getSocket(), message.c_str(), message.length(), 0);
+        }
+        else{
+            message = ": 433 "+ nick + " :Nickname is already in use.\r\n";
+            send(client.getSocket(), message.c_str(), message.length(), 0);
+        }
     }
 }
 
 void user(std::string nick, std::string mode, std::string hostName, std::string realName , Client &client)
 {
-    if (!client.get_pwd().empty() && !client.get_nickname().empty())
+    if (!client.get_pwd().empty() && !client.get_nickname().empty() && client.auth() == false)
     {
 
         if (nick != client.get_nickname())
         {
-            std::string message = "error :the  nickName in USER command mismatch the correct one";
+            std::string message = "error :the  nickName in USER command mismatch the correct one\r\n";
             send(client.getSocket(), message.c_str(), message.length(), 0);
             return;
         }
         else
         {
-            std::string welcomeMessage = ": 001 " + nick + " :Welcome " + nick + " to the Internet Relay Chat " + user_forma(nick, realName) + "\r\n";
+            std::string client_add = inet_ntoa(client.getAddress().sin_addr);
+            std::string welcomeMessage = ": 001 " + nick + " :Welcome " + nick + " to the Internet Relay Chat " + user_forma(nick, realName,client_add)+ "\r\n";
             client.set_user(realName);
             client.setAuth(true);
             send(client.getSocket(), welcomeMessage.c_str(), welcomeMessage.length(), 0);
         }
+    }
+}
+void privmsg(Client &client, std::string command){
+    std::vector<Client>::iterator it = _clients.begin();
+    std::istringstream iss(command);
+    std::string cmd , target, msg;
+    std::string message;
+    iss>>cmd>>target>>std::ws;
+    std::getline(iss, msg);
+    //handle channels
+    if (target[0] =='#')
+    {
+        std::cout << "it s for channel " << target<<std::endl;
+    }
+    //handle users
+    else
+    {
+        for (; it!=_clients.end();it++)
+        {
+            if (target == it->get_nickname())
+                break;
+        }
+        if (it !=_clients.end())
+        {
+            message = user_forma(client.get_nickname(), client.get_user() , inet_ntoa(client.getAddress().sin_addr));
+            message += " " + msg + "\r\n";
+            send(it->getSocket(), message.c_str(), message.length(), 0);
+        }
+        else
+        {
+            message =":401 " + client.get_nickname() + " " + target + " :No such nick\r\n";
+            send(client.getSocket(), message.c_str(), message.length(), 0);
+        }       
     }
 }
 void execute_command(Client &client)
@@ -183,6 +228,10 @@ void execute_command(Client &client)
             std::string realName;
             iss>>mode>>hostName>>realName;
             user(value, mode, hostName, realName , client);
+        }
+        else if (cmd == "PRIVMSG")
+        {
+            privmsg(client,command);
         }
     }
 
@@ -251,6 +300,15 @@ private:
         else if (bytesRead == 0 || bytesRead == -1) {
             // Client has closed the connection
             std::cout << "Client " << index << " disconnected." << std::endl;
+            std::vector<Client>::iterator it = _clients.begin();
+            for(;it!=_clients.end();it++)
+            {
+                if (it->getSocket() == fds[index].fd)
+                {
+                    _clients.erase(it);
+                    break;
+                }
+            }
             close(fds[index].fd);
             fds[index].fd = -1;
         }
