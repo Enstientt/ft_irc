@@ -19,5 +19,5 @@ class Channel{
         void invite();
         void topic();
         void mode();
-}
+};
 #endif

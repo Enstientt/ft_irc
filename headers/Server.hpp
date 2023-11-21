@@ -11,7 +11,8 @@
 #include <vector>
 #include "head.hpp"
 #include <sstream>
-#define PORT 6666
+#include "Channel.hpp"
+
 #define MAX_CLIENTS 10
 
 class Server {
@@ -20,6 +21,7 @@ private:
     std::string password;
     int serverSocket;
     std::vector<Client> _clients;
+    std::vector<Channel> _channels;
     struct pollfd fds[MAX_CLIENTS + 1];
     void acceptConnection();
     void handleClient(int index);
