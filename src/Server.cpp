@@ -144,53 +144,55 @@ void Server::user(std::string nick, std::string mode, std::string hostName, std:
 	}
 }
 void Server::privmsg(Client &client, std::string command){
-	std::vector<Client>::iterator it = _clients.begin();
-	std::istringstream iss(command);
-	std::string cmd , target, msg;
-	std::string message;
-	iss>>cmd>>target>>std::ws;
-	std::getline(iss, msg);
-	//handle channels
-	if (target[0] =='#')
-	{
-		std::vector<Channel>::iterator it0 = _channels.begin();
-		if(it0!= _channels.end())
-		{
-			for(; it0!=_channels.end();it0++)
-			{
-				if (it0->get_name() == target)
-					break;
-			}
-		if (it0==_channels.end())
-		{
-			send(client.getSocket(), "no such channel", 16, 0);
-		}
-		else if( it0->in_channel(client))
-		{
-			it0->broadcast_message(client);
-		}
-		}
-	}
-	//handle users
-	else
-	{
-		for (; it!=_clients.end();it++)
-		{
-			if (target == it->get_nickname())
-				break;
-		}
-		if (it !=_clients.end())
-		{
-			message = user_forma(client.get_nickname(), client.get_user() , inet_ntoa(client.getAddress().sin_addr));
-			message += " " + msg + "\r\n";
-			send(it->getSocket(), message.c_str(), message.length(), 0);
-		}
-		else
-		{
-			message =":401 " + client.get_nickname() + " " + target + " :No such nick\r\n";
-			send(client.getSocket(), message.c_str(), message.length(), 0);
-		}       
-	}
+    std::istringstream iss(command);
+    std::string cmd , target, msg;
+    std::string message;
+    iss >> cmd >> target >> std::ws;
+    std::getline(iss, msg);
+
+    //handle channels
+    if (target[0] =='#')
+    {
+        std::vector<Channel>::iterator it = _channels.begin();
+        for(; it != _channels.end(); ++it)
+        {
+            if (it->get_name() == target)
+                break;
+        }
+        if (it == _channels.end())
+        {
+            send(client.getSocket(), "no such channel", 16, 0);
+        }
+        else if(it->in_channel(client))
+        {
+            it->broadcast_message(client);
+        }
+        else
+        {
+            send(client.getSocket(), "you re not in the channel\r\n", 28,0);
+        }
+    }
+    //handle users
+    else
+    {
+        std::vector<Client>::iterator it = _clients.begin();
+        for (; it != _clients.end(); ++it)
+        {
+            if (it->get_nickname() == target)
+                break;
+        }
+        if (it != _clients.end())
+        {
+            message = user_forma(client.get_nickname(), client.get_user() , inet_ntoa(client.getAddress().sin_addr));
+            message += " " + msg + "\r\n";
+            send(it->getSocket(), message.c_str(), message.length(), 0);
+        }
+        else
+        {
+            message =":401 " + client.get_nickname() + " " + target + " :No such nick\r\n";
+            send(client.getSocket(), message.c_str(), message.length(), 0);
+        }       
+    }
 };
 
 void Server::execute_command(Client &client)
@@ -299,63 +301,105 @@ void Server::handleClient(int index) {
         else
             perror("recv");
     }
+// void Server::join(Client &client, std::string target, std::string pass)
+// {
+// 	std::vector<Channel>::iterator it = _channels.begin();
+// 	std::string msg;
+// 	for(; it!=_channels.end();it++)
+// 	{
+// 		std::cout<<it->get_name()<<std::endl;
+// 		if (it->get_name() == target)
+// 			break;
+// 	}
+// 	//check if the channel exist
+// 	if (it != _channels.end())
+// 	{
+// 		if (it->in_channel(client))
+// 		{
+// 			send(client.getSocket(), "you re already in the channel\r\n", 32, 0);
+// 		}
+// 		else
+// 		{
+// 			if (it->get_modes().find_first_of("+i")!=std::string::npos)
+// 			{
+// 				msg = "the channel" + target + "is only for invited (+i)\r\n";
+// 				send(client.getSocket(), msg.c_str(), msg.length(), 0);
+// 			}
+// 			else if(it->get_modes().find_first_of("+k")!=std::string::npos)
+// 			{
+// 				if (pass.empty())
+// 				{
+// 					msg = "the channel" + target + "required a key (+k)\r\n";
+// 					send(client.getSocket(), msg.c_str(), msg.length(), 0);
+// 					return;
+// 				}
+// 				else if ( pass !=it->get_pass())
+// 				{
+// 					msg = "the channel key (+k) is invalid \r\n";
+// 					send(client.getSocket(), msg.c_str(), msg.length(), 0);
+// 					return;
+// 				}
+// 			}
+// 			else if(it->channel_size() >= it->get_limit())
+// 			{
+// 				msg = "the channel" + target + "is full\r\n";
+// 				send(client.getSocket(), msg.c_str(), msg.length(), 0);
+// 				return;
+// 			}
+// 			it->add_client_to_channnel(client);
+// 		}
+// 	}
+// 	// check if not exist
+// 	else
+// 	{
+// 		Channel new_channel(target);
+// 		new_channel.add_client_to_channnel(client);
+// 		new_channel.add_operator(client);
+// 		_channels.push_back(new_channel);
+// 	} 
+// }
 void Server::join(Client &client, std::string target, std::string pass)
 {
-	std::vector<Channel>::iterator it = _channels.begin();
-	std::string msg;
-	for(; it!=_channels.end();it++)
-	{
-		std::cout<<it->get_name()<<std::endl;
-		if (it->get_name() == target)
-			break;
-	}
-	//check if the channel exist
-	if (it != _channels.end())
-	{
-		if (it->in_channel(client))
-		{
-			send(client.getSocket(), "you re already in the channel\r\n", 32, 0);
-		}
-		else
-		{
-			if (it->get_modes().find_first_of("+i")!=std::string::npos)
-			{
-				msg = "the channel" + target + "is only for invited (+i)\r\n";
-				send(client.getSocket(), msg.c_str(), msg.length(), 0);
-				return;
-			}
-			else if(it->get_modes().find_first_of("+k")!=std::string::npos)
-			{
-				if (pass.empty())
-				{
-					msg = "the channel" + target + "required a key (+k)\r\n";
-					send(client.getSocket(), msg.c_str(), msg.length(), 0);
-					return;
-				}
-				else if ( pass !=it->get_pass())
-				{
-					msg = "the channel key (+k) is invalid \r\n";
-					send(client.getSocket(), msg.c_str(), msg.length(), 0);
-					return;
-				}
-			}
-			else if(it->channel_size() >= it->get_limit())
-			{
-				msg = "the channel" + target + "is full\r\n";
-				send(client.getSocket(), msg.c_str(), msg.length(), 0);
-				return;
-			}
-			it->add_client_to_channnel(client);
-		}
-	}
-	// check if not exist
-	else
-	{
-		Channel new_channel(target);
-		new_channel.add_client_to_channnel(client);
-		new_channel.add_operator(client);
-		_channels.push_back(new_channel);
-	} 
+    std::vector<Channel>::iterator it = _channels.begin();
+    std::string msg;
+    for(; it!=_channels.end();it++)
+    {
+        std::cout<<it->get_name()<<std::endl;
+        if (it->get_name() == target)
+            break;
+    }
+    //check if the channel exist
+    if (it != _channels.end())
+    {
+        if (it->in_channel(client))
+        {
+            send(client.getSocket(), "You're already in the channel\r\n", 32, 0);
+        }
+        else if (it->is_invite_only() && !it->is_invited(client))
+        {
+            send(client.getSocket(), "You're not invited to the channel\r\n", 35, 0);
+        }
+        else if (it->is_full())
+        {
+            send(client.getSocket(), "The channel is full\r\n", 20, 0);
+        }
+        else if (it->has_password() && pass != it->get_pass())
+        {
+            send(client.getSocket(), "Incorrect password\r\n", 20, 0);
+        }
+        else
+        {
+            it->add_client_to_channnel(client);
+            send(client.getSocket(), "You have joined the channel\r\n", 28, 0);
+        }
+    }
+    else
+    {
+        // Create the channel and add the client to it
+        Channel newChannel(target, pass);
+        _channels.push_back(newChannel);
+        join(client, target, pass);
+    }
 }
 //tools
 bool Server::nick_already_exist(std::string nick, Client &client)

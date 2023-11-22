@@ -13,8 +13,21 @@ class Channel{
         std::vector<Client> _invites;
         std::string i , t, k, o , l;
         int limit;
+        bool invite_only ;
     public:
-        Channel(std::string name): name(name){
+         bool is_invite_only() const {
+        return invite_only;
+    };
+
+    bool is_full() const {
+        return _users.size() >= limit;
+    }
+
+    bool has_password() const {
+        return !_pwd.empty();
+    }
+        Channel(std::string name, std::string pass): name(name) {
+            _pwd = pass;
             i = "-i";
             t = "-t";
             k = "-k";
