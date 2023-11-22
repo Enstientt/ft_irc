@@ -12,6 +12,7 @@
 #define RPL_CREATED(client, datetime) (": 003 " + client + " :This server was created " + datetime + "\r\n")
 #define ERR_NEEDMOREPARAMS(client, command) (":localhost 461 " + client + " " + command + " :Not enough parameters.\r\n")
 #define ERR_PASSWDMISMATCH(client) (":localhost 464 " + client + " :Password incorrect\r\n")
-
-
+#define IRC_JOIN_MSG(server, nick, channel)( ":" + server+ " 331 " + nick + " " + channel + " :No topic is set\r\n" \
+        + ":" + server + " 353 " +  nick + " = " + channel + " :" + nick + "\r\n" \
+        + ":" + server  +" 366 "+ nick + " " + channel + " :End of /NAMES list.\r\n")
 #endif
