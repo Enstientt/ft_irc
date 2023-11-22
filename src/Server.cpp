@@ -1,6 +1,7 @@
 #include "../headers/Server.hpp"
 
 Server::Server(){
+	server_name = "Irc-Server";
 }
 
 Server:: Server(std::string port, std::string password): port(port) , password(password){
@@ -197,8 +198,7 @@ void Server::privmsg(Client &client, std::string command){
         }
         if (it != _clients.end())
         {
-            message = user_forma(client.get_nickname(), client.get_user() , inet_ntoa(client.getAddress().sin_addr));
-            message += " " + msg + "\r\n";
+            message = IRC_PRIVMSG_MSG(client.get_nickname(), it->get_nickname(), msg);
             send(it->getSocket(), message.c_str(), message.length(), 0);
         }
         else
@@ -276,9 +276,9 @@ void Server::execute_command(Client &client)
 		}
 		else if (cmd == "JOIN")
 		{
+
 			std::string pass;
-			// std::getline(iss, pass);
-			iss>>pass;
+			std::getline(iss, pass);
 			join(client, value ,pass);
 		}
 		else if(cmd == "MODE")
@@ -419,9 +419,9 @@ void Server::join(Client &client, std::string target, std::string pass)
 {
     std::vector<Channel>::iterator it = _channels.begin();
     std::string msg;
+
     for(; it!=_channels.end();it++)
     {
-        std::cout<<it->get_name()<<std::endl;
         if (it->get_name() == target)
             break;
     }
@@ -447,7 +447,8 @@ void Server::join(Client &client, std::string target, std::string pass)
         else
         {
             it->add_client_to_channnel(client);
-            send(client.getSocket(), "You have joined the channel\r\n", 30, 0);
+			msg = IRC_JOIN_MSG(server_name, client.get_nickname(), it->get_name());
+            send(client.getSocket(),msg.c_str(), msg.length(), 0);
         }
     }
     else
@@ -457,6 +458,7 @@ void Server::join(Client &client, std::string target, std::string pass)
 		newChannel.add_client_to_channnel(client);
 		newChannel.add_operator(client);
         _channels.push_back(newChannel);
+		msg = IRC_JOIN_MSG(server_name, client.get_nickname(), target);
     }
 }
 //tools

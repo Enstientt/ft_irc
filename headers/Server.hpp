@@ -21,6 +21,7 @@ class Channel;
 class Server {
 private:
     std::string port;
+    std::string server_name;
     std::string password;
     int serverSocket;
     std::vector<Client> _clients;

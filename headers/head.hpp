@@ -15,8 +15,7 @@
 #define IRC_JOIN_MSG(server, nick, channel)( ":" + server+ " 331 " + nick + " " + channel + " :No topic is set\r\n" \
         + ":" + server + " 353 " +  nick + " = " + channel + " :" + nick + "\r\n" \
         + ":" + server  +" 366 "+ nick + " " + channel + " :End of /NAMES list.\r\n")
-#define IRC_PRIVMSG_MSG(nick, channel, message) \
-    ":" nick " PRIVMSG " channel " :" message "\r\n"
+#define IRC_PRIVMSG_MSG(nick, channel, message) (":" + nick  + " PRIVMSG " + channel + " :" + message + "\r\n")
 #define IRC_RPL_NOTOPIC(server, nick, channel) \
     ":" server " 331 " nick " " channel " :No topic is set\r\n"
 

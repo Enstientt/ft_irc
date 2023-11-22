@@ -115,14 +115,13 @@ class Channel{
             std::istringstream iss(client.getMessage());
             iss>>cmd>>target>>std::ws;
             std::getline(iss, message);
-            to_send = user_forma(client.get_nickname(), client.get_user() , inet_ntoa(client.getAddress().sin_addr));
-            to_send += " " + message + "\r\n";
+            to_send = IRC_PRIVMSG_MSG(client.get_nickname(), this->get_name(), message);
             std::vector<Client>::iterator it = _users.begin();
             if (it !=_users.end())
             {
                 for(;it!= _users.end();it++)
                 {
-                    if ( client.get_nickname() != it->get_nickname())
+                    if (client.get_nickname() != it->get_nickname())
                         send(it->getSocket(), to_send.c_str(), to_send.length(), 0);
                 }
             }
