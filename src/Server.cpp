@@ -51,6 +51,20 @@ Server:: Server(std::string port, std::string password): port(port) , password(p
 Server::~Server() {
 	close(serverSocket);
 	}
+Client & Server::find_client(std::string nick)
+{
+	std::vector<Client>::iterator it = _clients.begin();
+	if (it!= _clients.end()){
+		for(;it!=_clients.end();it++)
+		{
+			if (nick == it->get_nickname())
+			{
+				return *it;
+			}
+		}
+	}
+	return *it;
+}
 void Server::run() {
 		std::cout << "Server listening on port " << port << "..." << std::endl;
 
@@ -195,7 +209,7 @@ void Server::privmsg(Client &client, std::string command){
     }
 };
 
-void Server::handle_mode(Client &client, const std::string& command)
+void Server::handle_mode(Client &client, std::string& command)
 {
     std::istringstream iss(command);
     std::string channelName, mode, parameter;
@@ -206,14 +220,23 @@ void Server::handle_mode(Client &client, const std::string& command)
     {
         if (it->get_name() == channelName)
         {
-            if (mode == "+k") it->set_key(parameter);
-            else if (mode == "-k") it->remove_key();
-            else if (mode == "+t") it->set_topic_protected(true);
-            else if (mode == "-t") it->set_topic_protected(false);
-            else if (mode == "+o") it->add_operator(parameter);
-            else if (mode == "-o") it->remove_operator(parameter);
-            else if (mode == "+l") it->set_user_limit(std::stoi(parameter));
-            else if (mode == "-l") it->remove_user_limit();
+			std::cout<<"we re in"<<std::endl;
+            if (mode == "+k") it->set_pass(parameter);
+            else if (mode == "-k") it->remove_pass();
+            // else if (mode == "+t") it->set_topic_protected(true);
+            // else if (mode == "-t") it->set_topic_protected(false);
+            else if (mode == "+o")
+			{
+				Client & cl = find_client(parameter);
+				it->add_operator(cl);
+			}
+              else if (mode == "+o")
+			{
+				Client & cl = find_client(parameter);
+				it->remove_operator(cl);
+			}
+            else if (mode == "+l") it->set_limit(std::stoi(parameter));
+            // else if (mode == "-l") it->remove_user_limit();
             else if (mode == "+i") it->set_invite_only(true);
             else if (mode == "-i") it->set_invite_only(false);
             break;
@@ -251,6 +274,8 @@ void Server::execute_command(Client &client)
 			iss>>pass;
 			join(client, value ,pass);
 		}
+		else if(cmd == "MODE")
+			handle_mode(client, command);
 	}
 
 void Server::acceptConnection() {

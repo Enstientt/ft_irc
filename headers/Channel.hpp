@@ -17,12 +17,12 @@ class Channel{
         int limit;
         bool invite_only ;
     public:
-        void set_key(std::string param)
+        void set_invite_only(bool st)
         {
-
+            this->invite_only = st;
         };
-        void remove_key(std::string param){
-            
+        void remove_pass(){
+            _pwd = "";
         };
 
          bool is_invite_only() const {
