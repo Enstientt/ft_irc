@@ -16,15 +16,18 @@
         + ":" + server + " 353 " +  nick + " = " + channel + " :" + nick + "\r\n" \
         + ":" + server  +" 366 "+ nick + " " + channel + " :End of /NAMES list.\r\n")
 #define IRC_PRIVMSG_MSG(nick, channel, message) (":" + nick  + " PRIVMSG " + channel + " :" + message + "\r\n")
+#define RPL_PRIVMSG(nick, username, target, message) (":" + nick + "!" + username + "@localhost PRIVMSG " + target + "  :" + message + "\r\n")
 #define IRC_RPL_NOTOPIC(server, nick, channel) \
     ":" server " 331 " nick " " channel " :No topic is set\r\n"
-
+#define ERR_CHANNELISFULL(client, channel) (":localhost 471 " + client + " " + channel + " :Cannot join channel (+l)\r\n")
+#define ERR_INVITEONLYCHAN(client, channel) (":localhost 473 " + client + " " + channel + " :Cannot join channel (+i)\r\n")
 #define IRC_RPL_TOPIC(server, nick, channel, topic) \
     ":" server " 332 " nick " " channel " :" topic "\r\n"
-
-#define IRC_RPL_NAMREPLY(server, nick, channel, users) \
-    ":" server " 353 " nick " = " channel " :" users "\r\n"
-
+#define ERR_USERONCHANNEL(client, nick, channel) (":localhost 443 " + client + " " + nick + " " + channel + " is already on channel\r\n")
+#define IRC_RPL_NAMREPLY(server, nick, channel, users) (":" + server+ " 353 " + nick+ " = " + channel + " :" + users + "\r\n")
+#define ERR_CHANNELISFULL(client, channel) (":localhost 471 " + client + " " + channel + " :Cannot join channel (+l)\r\n")
 #define IRC_RPL_ENDOFNAMES(server, nick, channel) \
     ":" server " 366 " nick " " channel " :End of /NAMES list.\r\n"
+#define RPL_JOIN(user_forma, client, channel) (user_forma + " JOIN :" + channel + "\r\n")
+#define ERR_BADCHANNELKEY(client, channel) (":localhost 475 " + client + " " + channel + " :Cannot join channel (+k)\r\n")
 #endif

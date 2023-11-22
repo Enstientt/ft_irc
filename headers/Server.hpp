@@ -33,7 +33,7 @@ public:
     Server() ;
     Server(std::string port, std::string password);
     ~Server();
-    Client & find_client(std::string nick);
+    std::vector<Client>::iterator find_client(std::string nick);
     void run();
     void pass(std::string password, std::string command, Client &client);
     bool nick_already_exist(std::string nick, Client &client);

@@ -15,8 +15,18 @@ class Channel{
         std::vector<Client> _invites;
         std::string i , t, k, o , l;
         int limit;
-        bool invite_only ;
+        bool is_limited;
+        bool invite_only;
+        bool rest;
     public:
+        void set_rest(bool rs)
+        {
+            rest= rs;
+        };
+        bool get_rest()
+        {
+            return rest;
+        };
         void set_invite_only(bool st)
         {
             this->invite_only = st;
@@ -39,6 +49,7 @@ class Channel{
         Channel(std::string name, std::string pass): name(name) {
             _pwd = pass;
             invite_only = false;
+            limit = INT_MAX;
             i = "-i";
             t = "-t";
             k = "-k";
@@ -115,7 +126,7 @@ class Channel{
             std::istringstream iss(client.getMessage());
             iss>>cmd>>target>>std::ws;
             std::getline(iss, message);
-            to_send = IRC_PRIVMSG_MSG(client.get_nickname(), this->get_name(), message);
+            to_send = RPL_PRIVMSG(client.get_nickname(), client.get_user(), this->get_name(), message);
             std::vector<Client>::iterator it = _users.begin();
             if (it !=_users.end())
             {
@@ -158,6 +169,10 @@ class Channel{
         {
             this->limit = lmt;
         };
+        void remove_limit()
+        {
+            limit = INT_MAX;
+        }
         int get_limit()
         {
             return this->limit;
