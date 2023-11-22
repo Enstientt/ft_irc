@@ -12,6 +12,7 @@
 #include "head.hpp"
 #include <sstream>
 #include "Channel.hpp"
+#include <algorithm>
 
 #define MAX_CLIENTS 10
 
@@ -39,6 +40,6 @@ public:
     void privmsg(Client &client, std::string command);
     void execute_command(Client &client);
     void join(Client &client, std::string target, std::string password);
-    void mode(Client &client, std::string command);
+    void handle_mode(Client &client, std::string &command);
 };
 #endif

@@ -2,10 +2,12 @@
 #define CHANNEL_HPP
 
 #include "Server.hpp"
+#include <algorithm>
 
 
 class Channel{
     private:
+        std::string _topic;
         std::string name;
         std::vector<Client> _operators;
         std::string _pwd;
@@ -15,6 +17,14 @@ class Channel{
         int limit;
         bool invite_only ;
     public:
+        void set_key(std::string param)
+        {
+
+        };
+        void remove_key(std::string param){
+            
+        };
+
          bool is_invite_only() const {
         return invite_only;
     };
@@ -60,6 +70,14 @@ class Channel{
         {
             _operators.push_back(client);
         };
+        void remove_operator(Client &client)
+    {
+        std::vector<Client>::iterator it = std::find(_operators.begin(), _operators.end(), client);
+        if (it != _operators.end())
+        {
+            _operators.erase(it);
+        }
+    }
         bool is_invited(Client &client)
         {
             std::vector<Client>::iterator it = _invites.begin();

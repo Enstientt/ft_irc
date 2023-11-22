@@ -195,6 +195,31 @@ void Server::privmsg(Client &client, std::string command){
     }
 };
 
+void Server::handle_mode(Client &client, const std::string& command)
+{
+    std::istringstream iss(command);
+    std::string channelName, mode, parameter;
+    iss >> channelName >> mode >> parameter;
+
+    std::vector<Channel>::iterator it = _channels.begin();
+    for (; it != _channels.end(); ++it)
+    {
+        if (it->get_name() == channelName)
+        {
+            if (mode == "+k") it->set_key(parameter);
+            else if (mode == "-k") it->remove_key();
+            else if (mode == "+t") it->set_topic_protected(true);
+            else if (mode == "-t") it->set_topic_protected(false);
+            else if (mode == "+o") it->add_operator(parameter);
+            else if (mode == "-o") it->remove_operator(parameter);
+            else if (mode == "+l") it->set_user_limit(std::stoi(parameter));
+            else if (mode == "-l") it->remove_user_limit();
+            else if (mode == "+i") it->set_invite_only(true);
+            else if (mode == "-i") it->set_invite_only(false);
+            break;
+        }
+    }
+}
 void Server::execute_command(Client &client)
 	{
 
