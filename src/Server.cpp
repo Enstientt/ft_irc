@@ -218,7 +218,7 @@ void Server::handle_mode(Client &client, std::string& command)
     std::vector<Channel>::iterator it = _channels.begin();
     for (; it != _channels.end(); ++it)
     {
-        if (it->get_name() == channelName)
+        if (it->get_name() == channelName && it->is_operator(client))
         {
             if (mode == "+k")
 			{
@@ -454,8 +454,9 @@ void Server::join(Client &client, std::string target, std::string pass)
     {
         // Create the channel and add the client to it
         Channel newChannel(target, pass);
+		newChannel.add_client_to_channnel(client);
+		newChannel.add_operator(client);
         _channels.push_back(newChannel);
-        join(client, target, pass);
     }
 }
 //tools
