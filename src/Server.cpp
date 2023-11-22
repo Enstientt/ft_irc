@@ -379,18 +379,18 @@ void Server::join(Client &client, std::string target, std::string pass)
         {
             send(client.getSocket(), "You're not invited to the channel\r\n", 35, 0);
         }
-        else if (it->is_full())
+        else if (it->get_modes().find_first_of("+l")!=std::string::npos && it->is_full())
         {
-            send(client.getSocket(), "The channel is full\r\n", 20, 0);
+            send(client.getSocket(), "The channel is full\r\n", 22, 0);
         }
-        else if (it->has_password() && pass != it->get_pass())
+        else if (it->get_modes().find_first_of("+k")!=std::string::npos  && it->has_password() && pass != it->get_pass())
         {
-            send(client.getSocket(), "Incorrect password\r\n", 20, 0);
+            send(client.getSocket(), "Incorrect password\r\n", 21, 0);
         }
         else
         {
             it->add_client_to_channnel(client);
-            send(client.getSocket(), "You have joined the channel\r\n", 28, 0);
+            send(client.getSocket(), "You have joined the channel\r\n", 30, 0);
         }
     }
     else

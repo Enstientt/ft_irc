@@ -28,6 +28,7 @@ class Channel{
     }
         Channel(std::string name, std::string pass): name(name) {
             _pwd = pass;
+            invite_only = false;
             i = "-i";
             t = "-t";
             k = "-k";
