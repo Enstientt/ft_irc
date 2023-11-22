@@ -212,17 +212,24 @@ void Server::privmsg(Client &client, std::string command){
 void Server::handle_mode(Client &client, std::string& command)
 {
     std::istringstream iss(command);
-    std::string channelName, mode, parameter;
-    iss >> channelName >> mode >> parameter;
+    std::string cmd, channelName, mode, parameter;
+    iss >> cmd>>channelName >> mode >> parameter;
 
     std::vector<Channel>::iterator it = _channels.begin();
     for (; it != _channels.end(); ++it)
     {
         if (it->get_name() == channelName)
         {
-			std::cout<<"we re in"<<std::endl;
-            if (mode == "+k") it->set_pass(parameter);
-            else if (mode == "-k") it->remove_pass();
+            if (mode == "+k")
+			{
+				std::cout<<"pass set "<<std::endl;
+				it->set_pass(parameter);
+			}
+            else if (mode == "-k")
+			{
+				std::cout<<"the pass removed"<<std::endl;
+				it->remove_pass();
+			}
             // else if (mode == "+t") it->set_topic_protected(true);
             // else if (mode == "-t") it->set_topic_protected(false);
             else if (mode == "+o")

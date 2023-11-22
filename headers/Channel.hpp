@@ -72,10 +72,14 @@ class Channel{
         };
         void remove_operator(Client &client)
     {
-        std::vector<Client>::iterator it = std::find(_operators.begin(), _operators.end(), client);
+        std::vector<Client>::iterator it = _operators.begin();
         if (it != _operators.end())
         {
-            _operators.erase(it);
+            for(;it!=_operators.end();it++)
+            {
+                if (it->get_nickname()== client.get_nickname())
+                    _operators.erase(it);
+            }
         }
     }
         bool is_invited(Client &client)
