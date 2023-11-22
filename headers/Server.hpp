@@ -15,6 +15,8 @@
 
 #define MAX_CLIENTS 10
 
+class Channel;
+
 class Server {
 private:
     std::string port;
@@ -36,5 +38,7 @@ public:
     void user(std::string nick, std::string mode, std::string hostName, std::string realName , Client &client);
     void privmsg(Client &client, std::string command);
     void execute_command(Client &client);
+    void join(Client &client, std::string target, std::string password);
+    void mode(Client &client, std::string command);
 };
 #endif

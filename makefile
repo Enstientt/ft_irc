@@ -1,8 +1,8 @@
 NAME = ircserv
 
-SRCS = main.cpp ./src/Server.cpp
+SRCS = main.cpp ./src/Server.cpp ./src/Channel.cpp
 
-HEADERS = ./headers/Server.hpp  ./headers/head.hpp ./headers/Client.hpp 
+HEADERS = ./headers/Server.hpp  ./headers/Channel.hpp ./headers/head.hpp ./headers/Client.hpp 
 OBJS = $(SRCS:.cpp=.o)
 
 #FLAGS = -Wall -Wextra -Werror -std=c++98
