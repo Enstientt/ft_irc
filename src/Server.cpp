@@ -476,6 +476,8 @@ void Server::join(Client &client, std::string target, std::string pass)
 		it->add_client_to_channnel(client);
 		msg = RPL_JOIN(user_forma(client.get_nickname(),client.get_user(),inet_ntoa(client.getAddress().sin_addr)), client.get_nickname(), it->get_name());
 		it->broadcast_message(client, msg, 0);
+		msg = RPL_NAMREPLY(client.get_nickname(),target, it->get_list_of_users()) + RPL_ENDOFNAMES(client, target) ;
+		send(client.getSocket(), msg.c_str(),msg.length(),0);
     }
     else
     {
@@ -486,6 +488,8 @@ void Server::join(Client &client, std::string target, std::string pass)
         _channels.push_back(newChannel);
 		msg = RPL_JOIN(user_forma(client.get_nickname(),client.get_user(),inet_ntoa(client.getAddress().sin_addr)), client.get_nickname(), target);
 		newChannel.broadcast_message(client, msg,0);
+		msg = RPL_NAMREPLY(client.get_nickname(),target, it->get_list_of_users()) + RPL_ENDOFNAMES(client, target) ;
+		send(client.getSocket(), msg.c_str(),msg.length(),0);
     }
 }
 //tools

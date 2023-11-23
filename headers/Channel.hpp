@@ -19,6 +19,21 @@ class Channel{
         bool invite_only;
         bool rest;
     public:
+        std::string get_list_of_users(){
+            std::string users;
+            std::vector<Client>::iterator it = _users.begin();
+
+            for(;it!=_users.end();it++)
+            {
+                if (is_operator(*it))
+                {
+                    users += "@"+it->get_nickname();
+                }
+                else
+                    users+=it->get_nickname();
+            }
+            return users;
+        };
         void set_rest(bool rs)
         {
             rest= rs;
