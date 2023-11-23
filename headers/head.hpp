@@ -30,4 +30,7 @@
     ":" server " 366 " nick " " channel " :End of /NAMES list.\r\n"
 #define RPL_JOIN(user_forma, client, channel) (user_forma + " JOIN :" + channel + "\r\n")
 #define ERR_BADCHANNELKEY(client, channel) (":localhost 475 " + client + " " + channel + " :Cannot join channel (+k)\r\n")
+#define ERR_NOSUCHNICK(client, nickname) (":localhost 401 " + client + " " + nickname + " :No such nick/channel\r\n")
+#define ERR_NOSUCHCHANNEL(client, channel) (":localhost 403 " + client + " " + channel + " :No such channel\r\n")
+#define ERR_NOTONCHANNEL(client, channel) (":localhost 442 " + client + " " + channel + " :You're not on that channel.\r\n")
 #endif

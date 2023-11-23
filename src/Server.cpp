@@ -165,8 +165,13 @@ void Server::privmsg(Client &client, std::string command){
     iss >> cmd >> target >> std::ws;
     std::getline(iss, msg);
 
+	if (target.empty() || msg.empty())
+	{
+		message = ERR_NEEDMOREPARAMS(client.get_nickname(), cmd);
+		send(client.getSocket(), message.c_str(), message.length(), 0);
+	}
     //handle channels
-    if (target[0] =='#')
+    else if (target[0] =='#')
     {
         std::vector<Channel>::iterator it = _channels.begin();
         for(; it != _channels.end(); ++it)
@@ -176,15 +181,18 @@ void Server::privmsg(Client &client, std::string command){
         }
         if (it == _channels.end())
         {
-            send(client.getSocket(), "no such channel", 16, 0);
+            message = ERR_NOSUCHCHANNEL(client.get_nickname(), target);
+			send(client.getSocket(), message.c_str(), message.length(), 0);
         }
         else if(it->in_channel(client))
         {
-            it->broadcast_message(client);
+			message = RPL_PRIVMSG(client.get_nickname(), client.get_user(), it->get_name(), msg);
+            it->broadcast_message(client, message, 1);
         }
         else
         {
-            send(client.getSocket(), "you re not in the channel\r\n", 28,0);
+			message = ERR_NOTONCHANNEL(client.get_nickname(), target);
+            send(client.getSocket(), message.c_str(), message.length(),0);
         }
     }
     //handle users
@@ -203,7 +211,7 @@ void Server::privmsg(Client &client, std::string command){
         }
         else
         {
-            message =":401 " + client.get_nickname() + " " + target + " :No such nick\r\n";
+            message = ERR_NOSUCHNICK(client.get_nickname(), target);
             send(client.getSocket(), message.c_str(), message.length(), 0);
         }       
     }
@@ -422,6 +430,7 @@ void Server::join(Client &client, std::string target, std::string pass)
 {
     std::vector<Channel>::iterator it = _channels.begin();
     std::string msg;
+	int toggler = 0;
 
     for(; it!=_channels.end();it++)
     {
@@ -435,29 +444,38 @@ void Server::join(Client &client, std::string target, std::string pass)
         {
 			msg = ERR_USERONCHANNEL(client.get_nickname(), client.get_nickname(), it->get_name());
             send(client.getSocket(), msg.c_str(), msg.length(), 0);
+			return;
         }
-        else if (it->is_invite_only() && !it->is_invited(client))
+        if (it->is_invite_only())
         {
-			msg = ERR_INVITEONLYCHAN(client.get_nickname(), it->get_name());
-            send(client.getSocket(), msg.c_str(), msg.length(), 0);
+			if (!it->is_invited(client))
+			{
+				msg = ERR_INVITEONLYCHAN(client.get_nickname(), it->get_name());
+				send(client.getSocket(), msg.c_str(), msg.length(), 0);
+				return;
+			}
         }
-        else if (it->get_modes().find_first_of("+l")!=std::string::npos && it->is_full())
+        if (it->get_modes().find_first_of("+l")!=std::string::npos)
         {
-			msg = ERR_CHANNELISFULL(client.get_nickname(), it->get_name());
-            send(client.getSocket(), msg.c_str(), msg.length(), 0);
+			if (it->is_full())
+			{
+				msg = ERR_CHANNELISFULL(client.get_nickname(), it->get_name());
+				send(client.getSocket(), msg.c_str(), msg.length(), 0);
+				return;
+			}
         }
-        else if (it->get_rest() && pass != it->get_pass())
+        if (it->get_rest())
         {
-			msg =ERR_BADCHANNELKEY(client.get_nickname(), it->get_name());
-            send(client.getSocket(), msg.c_str(),msg.length(), 0);
-
+			if (pass != it->get_pass() && !it->get_pass().empty())
+			{
+				msg =ERR_BADCHANNELKEY(client.get_nickname(), it->get_name());
+				send(client.getSocket(), msg.c_str(),msg.length(), 0);
+				return;
+			}
         }
-        else
-        {
-            it->add_client_to_channnel(client);
-			msg = RPL_JOIN(user_forma(client.get_nickname(),client.get_user(),inet_ntoa(client.getAddress().sin_addr)), client.get_nickname(), it->get_name());
-            send(client.getSocket(),msg.c_str(), msg.length(), 0);
-        }
+		it->add_client_to_channnel(client);
+		msg = RPL_JOIN(user_forma(client.get_nickname(),client.get_user(),inet_ntoa(client.getAddress().sin_addr)), client.get_nickname(), it->get_name());
+		it->broadcast_message(client, msg, 0);
     }
     else
     {
@@ -467,7 +485,7 @@ void Server::join(Client &client, std::string target, std::string pass)
 		newChannel.add_operator(client);
         _channels.push_back(newChannel);
 		msg = RPL_JOIN(user_forma(client.get_nickname(),client.get_user(),inet_ntoa(client.getAddress().sin_addr)), client.get_nickname(), target);
-		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		newChannel.broadcast_message(client, msg,0);
     }
 }
 //tools

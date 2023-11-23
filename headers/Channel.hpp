@@ -49,6 +49,8 @@ class Channel{
         Channel(std::string name, std::string pass): name(name) {
             _pwd = pass;
             invite_only = false;
+            rest = false;
+            is_limited = false;
             limit = INT_MAX;
             i = "-i";
             t = "-t";
@@ -120,20 +122,24 @@ class Channel{
             return false;
         }
         
-        void broadcast_message(Client &client)
+        void broadcast_message(Client &client, std::string message,int flag)
         {
-            std::string cmd, target, message, to_send;
-            std::istringstream iss(client.getMessage());
-            iss>>cmd>>target>>std::ws;
-            std::getline(iss, message);
-            to_send = RPL_PRIVMSG(client.get_nickname(), client.get_user(), this->get_name(), message);
+            // std::string cmd, target, message, to_send;
+            // std::istringstream iss(client.getMessage());
+            // iss>>cmd>>target>>std::ws;
+            // std::getline(iss, message);
+            // to_send = RPL_PRIVMSG(client.get_nickname(), client.get_user(), this->get_name(), message);
             std::vector<Client>::iterator it = _users.begin();
             if (it !=_users.end())
             {
                 for(;it!= _users.end();it++)
                 {
-                    if (client.get_nickname() != it->get_nickname())
-                        send(it->getSocket(), to_send.c_str(), to_send.length(), 0);
+                    if (flag == 0)
+                        send(it->getSocket(), message.c_str(), message.length(), 0);
+                    else{
+                        if (client.get_nickname() != it->get_nickname())
+                            send(it->getSocket(), message.c_str(), message.length(), 0);
+                    }
                 }
             }
         }
