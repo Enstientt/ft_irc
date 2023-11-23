@@ -27,7 +27,7 @@ class Channel{
             {
                 if (is_operator(*it))
                 {
-                    users += "@"+it->get_nickname();
+                    users += "@"+it->get_nickname() + " ";
                 }
                 else
                     users+=it->get_nickname();
