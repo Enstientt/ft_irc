@@ -52,7 +52,7 @@ Server:: Server(std::string port, std::string password): port(port) , password(p
 Server::~Server() {
 	close(serverSocket);
 	}
-std::vector<Client>::iterator  Server::find_client(std::string nick)
+Client &  Server::find_client(std::string nick)
 {
 	std::vector<Client>::iterator it = _clients.begin();
 	if (it!= _clients.end()){
@@ -60,11 +60,10 @@ std::vector<Client>::iterator  Server::find_client(std::string nick)
 		{
 			if (nick == it->get_nickname())
 			{
-				return it;
+				return *it;
 			}
 		}
 	}
-	return it;
 }
 void Server::run() {
 		std::cout << "Server listening on port " << port << "..." << std::endl;
@@ -219,15 +218,14 @@ void Server::privmsg(Client &client, std::string command){
 
 void Server::handle_mode(Client &client, std::string& command)
 {
-	std::vector<Client>::iterator cl;
     std::istringstream iss(command);
-    std::string cmd, channelName, mode, parameter;
-    iss >> cmd>>channelName >> mode >> parameter;
+    std::string cmd, name, mode, parameter;
+    iss >> cmd>>name >> mode >> parameter;
 
     std::vector<Channel>::iterator it = _channels.begin();
     for (; it != _channels.end(); ++it)
     {
-        if (it->get_name() == channelName && it->is_operator(client))
+        if (it->get_name() == name && it->is_operator(client))
         {
             if (mode == "+k")
 			{
@@ -243,20 +241,20 @@ void Server::handle_mode(Client &client, std::string& command)
 			}
             // else if (mode == "+t") it->set_topic_protected(true);
             // else if (mode == "-t") it->set_topic_protected(false);
-            // else if (mode == "+o")
-			// {
-			// 	cl = find_client(parameter);
-			// 	it->add_operator(*cl);
-			// }
-            //   else if (mode == "-o")
-			// {
-			// 	cl = find_client(parameter);
-			// 	it->remove_operator(*cl);
-			// }
-            else if (mode == "+l") it->set_limit(std::stoi(parameter));
-            else if (mode == "-l") it->remove_limit();
-            else if (mode == "+i") it->set_invite_only(true);
-            else if (mode == "-i") it->set_invite_only(false);
+            else if (mode == "+o")
+			{
+				Client & cl = find_client(name);
+				it->add_operator(cl);
+			}
+              else if (mode == "-o")
+			{
+				Client & cl = find_client(name);
+				it->remove_operator(cl);
+			}
+            // else if (mode == "+l") it->set_limit(std::stoi(parameter));
+            // else if (mode == "-l") it->remove_limit();
+            // else if (mode == "+i") it->set_invite_only(true);
+            // else if (mode == "-i") it->set_invite_only(false);
             break;
         }
     }
@@ -289,7 +287,7 @@ void Server::execute_command(Client &client)
 		{
 
 			std::string pass;
-			// std::getline(iss, pass);
+			iss>>pass;
 			join(client, value ,pass);
 		}
 		else if(cmd == "MODE")
@@ -369,63 +367,7 @@ void Server::handleClient(int index) {
         else
             perror("recv");
     }
-// void Server::join(Client &client, std::string target, std::string pass)
-// {
-// 	std::vector<Channel>::iterator it = _channels.begin();
-// 	std::string msg;
-// 	for(; it!=_channels.end();it++)
-// 	{
-// 		std::cout<<it->get_name()<<std::endl;
-// 		if (it->get_name() == target)
-// 			break;
-// 	}
-// 	//check if the channel exist
-// 	if (it != _channels.end())
-// 	{
-// 		if (it->in_channel(client))
-// 		{
-// 			send(client.getSocket(), "you re already in the channel\r\n", 32, 0);
-// 		}
-// 		else
-// 		{
-// 			if (it->get_modes().find_first_of("+i")!=std::string::npos)
-// 			{
-// 				msg = "the channel" + target + "is only for invited (+i)\r\n";
-// 				send(client.getSocket(), msg.c_str(), msg.length(), 0);
-// 			}
-// 			else if(it->get_modes().find_first_of("+k")!=std::string::npos)
-// 			{
-// 				if (pass.empty())
-// 				{
-// 					msg = "the channel" + target + "required a key (+k)\r\n";
-// 					send(client.getSocket(), msg.c_str(), msg.length(), 0);
-// 					return;
-// 				}
-// 				else if ( pass !=it->get_pass())
-// 				{
-// 					msg = "the channel key (+k) is invalid \r\n";
-// 					send(client.getSocket(), msg.c_str(), msg.length(), 0);
-// 					return;
-// 				}
-// 			}
-// 			else if(it->channel_size() >= it->get_limit())
-// 			{
-// 				msg = "the channel" + target + "is full\r\n";
-// 				send(client.getSocket(), msg.c_str(), msg.length(), 0);
-// 				return;
-// 			}
-// 			it->add_client_to_channnel(client);
-// 		}
-// 	}
-// 	// check if not exist
-// 	else
-// 	{
-// 		Channel new_channel(target);
-// 		new_channel.add_client_to_channnel(client);
-// 		new_channel.add_operator(client);
-// 		_channels.push_back(new_channel);
-// 	} 
-// }
+
 void Server::join(Client &client, std::string target, std::string pass)
 {
     std::vector<Channel>::iterator it = _channels.begin();
@@ -452,7 +394,7 @@ void Server::join(Client &client, std::string target, std::string pass)
 			{
 				msg = ERR_INVITEONLYCHAN(client.get_nickname(), it->get_name());
 				send(client.getSocket(), msg.c_str(), msg.length(), 0);
-				return;
+				toggler = 1;
 			}
         }
         if (it->get_modes().find_first_of("+l")!=std::string::npos)
@@ -461,23 +403,28 @@ void Server::join(Client &client, std::string target, std::string pass)
 			{
 				msg = ERR_CHANNELISFULL(client.get_nickname(), it->get_name());
 				send(client.getSocket(), msg.c_str(), msg.length(), 0);
-				return;
+				toggler = 1;
 			}
         }
         if (it->get_rest())
         {
-			if (pass != it->get_pass() && !it->get_pass().empty())
+			if (pass != it->get_pass())
 			{
+				std::cout<< "this is the channel pass"<<it->get_pass()<<std::endl;
+				std::cout<< "this is the pass"<<pass<<std::endl;
 				msg =ERR_BADCHANNELKEY(client.get_nickname(), it->get_name());
 				send(client.getSocket(), msg.c_str(),msg.length(), 0);
-				return;
+				toggler = 1;
 			}
         }
-		it->add_client_to_channnel(client);
-		msg = RPL_JOIN(user_forma(client.get_nickname(),client.get_user(),inet_ntoa(client.getAddress().sin_addr)), client.get_nickname(), it->get_name());
-		it->broadcast_message(client, msg, 0);
-		msg = IRC_JOIN_MSG(client.get_nickname(), it->get_name(), it->get_list_of_users());
-		send(client.getSocket(), msg.c_str(),msg.length(),0);
+		if (toggler == 0)
+		{
+			it->add_client_to_channnel(client);
+			msg = RPL_JOIN(user_forma(client.get_nickname(),client.get_user(),inet_ntoa(client.getAddress().sin_addr)), client.get_nickname(), it->get_name());
+			it->broadcast_message(client, msg, 0);
+			msg = IRC_JOIN_MSG(client.get_nickname(), it->get_name(), it->get_list_of_users());
+			send(client.getSocket(), msg.c_str(),msg.length(),0);
+		}
     }
     else
     {
