@@ -30,7 +30,7 @@ class Channel{
                     users += "@"+it->get_nickname() + " ";
                 }
                 else
-                    users+=it->get_nickname();
+                    users+=it->get_nickname() + " ";
             }
             return users;
         };
