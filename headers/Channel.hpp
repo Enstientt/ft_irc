@@ -198,7 +198,7 @@ class Channel{
         {
             return this->limit;
         }
-        // void kick();
+        void kick();
         // void invite();
         // void topic();
         // void mode();
