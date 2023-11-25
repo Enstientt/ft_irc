@@ -239,8 +239,8 @@ void Server::handle_mode(Client &client, std::string& command)
 				it->remove_pass();
 				it->set_rest(false);
 			}
-            // else if (mode == "+t") it->set_topic_protected(true);
-            // else if (mode == "-t") it->set_topic_protected(false);
+            else if (mode == "+t") it->set_topic_protected(true);
+            else if (mode == "-t") it->set_topic_protected(false);
             else if (mode == "+o")
 			{
 				Client & cl = find_client(name);
@@ -251,10 +251,10 @@ void Server::handle_mode(Client &client, std::string& command)
 				Client & cl = find_client(name);
 				it->remove_operator(cl);
 			}
-            // else if (mode == "+l") it->set_limit(std::stoi(parameter));
-            // else if (mode == "-l") it->remove_limit();
-            // else if (mode == "+i") it->set_invite_only(true);
-            // else if (mode == "-i") it->set_invite_only(false);
+            else if (mode == "+l") it->set_limit(std::stoi(parameter));
+            else if (mode == "-l") it->remove_limit();
+            else if (mode == "+i") it->set_invite_only(true);
+            else if (mode == "-i") it->set_invite_only(false);
             break;
         }
     }
