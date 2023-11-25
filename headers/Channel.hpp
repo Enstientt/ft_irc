@@ -20,16 +20,15 @@ class Channel{
         bool rest;
         bool is_topic_protected;
     public:
+        Channel(std::string name, std::string pass);
         void set_topic_protected(bool state);
         std::string get_list_of_users();
         void set_rest(bool rs);
         bool get_rest();
         void set_invite_only(bool state);
-        void remove_pass();
         bool is_invite_only() const ;
         bool is_full() const ;
         bool has_password() const ;
-        Channel(std::string name, std::string pass);
         std::string get_modes();
         void set_mode(std::string mode);
         int channel_size();
@@ -45,7 +44,8 @@ class Channel{
         void set_name(std::string nm);
         void set_pass(std::string pwd);
         void set_limit(int lmt);
-        void remove_limit();
         int get_limit();
+        void set_lim_state(bool state);
+        bool get_lim_state();
 };
 #endif

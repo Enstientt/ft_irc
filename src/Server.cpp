@@ -64,6 +64,8 @@ Client &  Server::find_client(std::string nick)
 			}
 		}
 	}
+	client_note_found.set_nickName("NOT_FOUND");
+	return client_note_found;
 }
 void Server::run() {
 		std::cout << "Server listening on port " << port << "..." << std::endl;
@@ -236,23 +238,42 @@ void Server::handle_mode(Client &client, std::string& command)
             else if (mode == "-k")
 			{
 				std::cout<<"the pass removed"<<std::endl;
-				it->remove_pass();
+				it->set_pass("");
 				it->set_rest(false);
 			}
             else if (mode == "+t") it->set_topic_protected(true);
             else if (mode == "-t") it->set_topic_protected(false);
-            else if (mode == "+o")
+            else if (mode[1] == 'o')
 			{
-				Client & cl = find_client(name);
-				it->add_operator(cl);
+				Client & cl = find_client(parameter);
+				if (it->in_channel(cl))
+				{	
+					mode[0]=='+'? it->add_operator(cl): (mode[0]=='-' && it->is_operator(cl)? it->remove_operator(cl): (void)1);
+					std::string msg = RPL_NAMREPLY(client.get_nickname(), it->get_name(), it->get_list_of_users());
+					msg += ": 366 "+ cl.get_nickname() + " " + it->get_name() + " :End of /NAMES list.\r\n";
+					std::cout<<"list of operators "<<it->get_list_of_users()<<std::endl;
+					it->broadcast_message(client,msg,0);
+				}
 			}
-              else if (mode == "-o")
+            //   else if (mode == "-o")
+			// {
+			// 	Client & cl = find_client(parameter);
+			// 	if (it->in_channel(cl) && it->is_operator(cl))
+			// 		it->remove_operator(cl);
+			// }
+            else if (mode == "+l")
 			{
-				Client & cl = find_client(name);
-				it->remove_operator(cl);
+				std::cout<<"limit set"<<std::endl;
+				it->set_limit(std::stoi(parameter));
+				it->set_lim_state(true);
 			}
-            else if (mode == "+l") it->set_limit(std::stoi(parameter));
-            else if (mode == "-l") it->remove_limit();
+            else if (mode == "-l")
+			{
+				std::cout<<"limit removed"<<std::endl;
+				it->set_limit(MAX_CLIENTS);
+				it->set_lim_state(false);
+			}
+				
             else if (mode == "+i") it->set_invite_only(true);
             else if (mode == "-i") it->set_invite_only(false);
             break;
@@ -397,7 +418,7 @@ void Server::join(Client &client, std::string target, std::string pass)
 				toggler = 1;
 			}
         }
-        if (it->get_modes().find_first_of("+l")!=std::string::npos)
+        if (it->get_lim_state())
         {
 			if (it->is_full())
 			{

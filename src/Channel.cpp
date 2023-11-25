@@ -28,10 +28,6 @@ void Channel::set_invite_only(bool state)
         {
             this->invite_only = state;
         };
-void Channel::remove_pass(){
-            _pwd = "";
-        };
-
 bool Channel::is_invite_only() const {
         return invite_only;
     };
@@ -171,11 +167,16 @@ void Channel::set_limit(int lmt)
 {
     this->limit = lmt;
 };
-void Channel::remove_limit()
-{
-    limit = MAX_CLIENTS;
-}
 int Channel::get_limit()
 {
     return this->limit;
+}
+void Channel::set_lim_state(bool state)
+{
+    this->is_limited = state;
+}
+
+bool Channel::get_lim_state()
+{
+    return this->is_limited ;
 }

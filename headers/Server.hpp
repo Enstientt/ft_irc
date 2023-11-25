@@ -29,6 +29,7 @@ private:
     struct pollfd fds[MAX_CLIENTS + 1];
     void acceptConnection();
     void handleClient(int index);
+    Client client_note_found;
 public:
     Server() ;
     Server(std::string port, std::string password);

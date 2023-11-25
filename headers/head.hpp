@@ -30,6 +30,6 @@
 #define ERR_NOSUCHNICK(client, nickname) (":localhost 401 " + client + " " + nickname + " :No such nick/channel\r\n")
 #define ERR_NOSUCHCHANNEL(client, channel) (":localhost 403 " + client + " " + channel + " :No such channel\r\n")
 #define ERR_NOTONCHANNEL(client, channel) (":localhost 442 " + client + " " + channel + " :You're not on that channel.\r\n")
-#define RPL_NAMREPLY(nickname, channelType, channel, users) "353 " + nickname + " " + channelType + " " + channel + " :" + users + "\r\n"
-#define RPL_ENDOFNAMES(nickname, channel) "366 " + nickname + " " + channel + " :End of /NAMES list." + "\r\n"
+#define RPL_NAMREPLY(nick, channel, users) ": 353 " +  nick + " = " + channel + " :" + users + "\r\n"
+#define RPL_ENDOFNAMES(nickname, channel) (": 366 "+ nick + " " + channel + " :End of /NAMES list.\r\n")
 #endif
