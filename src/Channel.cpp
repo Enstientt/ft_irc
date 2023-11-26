@@ -191,3 +191,19 @@ void Channel::add_invited(Client &client)
 {
     _invites.push_back(client);
 }
+
+void Channel::remove_client_from_channel(Client &client)
+{
+    std::vector<Client>::iterator it = _users.begin();
+    if (it!=_users.end())
+    {
+        for(;it!=_users.end();it++)
+        {
+            if (it->get_nickname()==client.get_nickname())
+            {
+                _users.erase(it);
+                break;
+            }
+        }
+    }
+}

@@ -325,6 +325,13 @@ void Server::execute_command(Client &client)
 			iss>>channel;
 			invite(client, value, channel);
 		}
+		else if (cmd == "KICK")
+		{
+			std::string nickname, message;
+			iss>>nickname;
+			getline(iss, message);
+			kick(client, value, nickname, message);
+		}
 	}
 
 void Server::acceptConnection() {
@@ -541,6 +548,51 @@ void Server::invite(Client & client, std::string nickname, std::string channel)
 			msg = RPL_INVITING(server_name, nickname, channel);
 			send(client.getSocket(), msg.c_str(), msg.length(), 0);
 			msg = RPL_INVITATION(cl.get_nickname(), client.get_nickname(), channel);
+			send(cl.getSocket(), msg.c_str(), msg.length(), 0);
+		}
+	}
+	else
+	{
+		msg = ERR_CHANOPRIVSNEEDED(server_name, client.get_nickname(), channel);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+	}
+}
+
+void Server::kick(Client &client, std::string channel, std::string user, std::string message)
+{
+	std::string msg;
+	if (user.empty() || channel.empty())
+	{
+		msg = ERR_NEEDMOREPARAMS(client.get_nickname(), "INVITE");
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		return;
+	}
+	Channel &chan = find_channel(channel);
+	Client  &cl = find_client(user);
+	if (chan.get_name()=="NOT_FOUND")
+	{
+		msg = ERR_NOSUCHCHANNEL(client.get_nickname(), channel);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		return;
+	}
+	if (cl.get_nickname()=="NOT_FOUND")
+	{
+		msg = ERR_NOSUCHNICK(client.get_nickname(), user);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		return;
+	}
+	if (chan.is_operator(client))
+	{
+		if (!chan.in_channel(cl))
+		{
+			msg = ERR_USERNOTINCHANNEL(server_name, client.get_nickname(), user, channel);
+			send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		}
+		else
+		{
+			chan.remove_client_from_channel(cl);
+			chan.is_operator(cl)? chan.remove_operator(cl) : (void)1;
+			msg = RPL_KICKED(server_name, user, channel, client.get_nickname(), message);
 			send(cl.getSocket(), msg.c_str(), msg.length(), 0);
 		}
 	}

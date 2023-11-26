@@ -36,4 +36,6 @@
 #define RPL_INVITING(server, nick, channel) (":"+ server +" 341 "+ nick +" "+ channel+ "\r\n")
 #define ERR_CHANOPRIVSNEEDED(server, nick, channel) ( ":"+ server+ " 482 "+ nick+ " " +channel+" :You're not channel operator\r\n")
 #define RPL_INVITATION(nick, inviter, channel)(":" + inviter +" PRIVMSG "+ nick +" :\001INVITE " +channel +"\001\r\n")
+#define RPL_KICKED(server, nick, channel, kicker, comment) ":" + server + " KICK "+ channel+ " " +nick +" :" + kicker +" "+ comment + "\r\n"
+#define ERR_USERNOTINCHANNEL(server, nick, user, channel) ":" +server+ " 441 "+ nick+ " "+ user +" " +channel +" :They aren't on that channel\r\n"
 #endif
