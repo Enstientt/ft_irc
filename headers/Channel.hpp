@@ -1,8 +1,9 @@
 #ifndef CHANNEL_HPP
 #define CHANNEL_HPP
-
-#include "Server.hpp"
+#include "Client.hpp"
 #include <algorithm>
+
+#define MAX_CLIENTS 10
 
 
 class Channel{

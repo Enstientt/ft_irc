@@ -17,7 +17,6 @@
 #define MAX_CLIENTS 10
 
 class Channel;
-
 class Server {
 private:
     std::string port;
@@ -29,8 +28,8 @@ private:
     struct pollfd fds[MAX_CLIENTS + 1];
     void acceptConnection();
     void handleClient(int index);
-    Client client_note_found;
     Channel channel_note_found;
+    Client client_note_found;
 public:
     Server() ;
     Server(std::string port, std::string password);
