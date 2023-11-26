@@ -86,7 +86,10 @@ void Channel::remove_operator(Client &client)
         for (; it != _operators.end(); it++)
         {
             if (it->get_nickname() == client.get_nickname())
+            {
                 _operators.erase(it);
+                break;
+            }
         }
     }
 }

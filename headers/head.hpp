@@ -32,4 +32,5 @@
 #define ERR_NOTONCHANNEL(client, channel) (":localhost 442 " + client + " " + channel + " :You're not on that channel.\r\n")
 #define RPL_NAMREPLY(nick, channel, users) ": 353 " +  nick + " = " + channel + " :" + users + "\r\n"
 #define RPL_ENDOFNAMES(nickname, channel) (": 366 "+ nick + " " + channel + " :End of /NAMES list.\r\n")
+#define RPL_MODESET(operator, channel, mode, nick) (":" + operator + " MODE " + channel + " " + mode + "  " + nick + "\r\n")
 #endif

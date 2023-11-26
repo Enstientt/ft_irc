@@ -221,7 +221,7 @@ void Server::privmsg(Client &client, std::string command){
 void Server::handle_mode(Client &client, std::string& command)
 {
     std::istringstream iss(command);
-    std::string cmd, name, mode, parameter;
+    std::string msg, cmd, name, mode, parameter;
     iss >> cmd>>name >> mode >> parameter;
 
     std::vector<Channel>::iterator it = _channels.begin();
@@ -243,35 +243,41 @@ void Server::handle_mode(Client &client, std::string& command)
 			}
             else if (mode == "+t") it->set_topic_protected(true);
             else if (mode == "-t") it->set_topic_protected(false);
-            else if (mode[1] == 'o')
+            else if (mode == "+o" || mode =="-o")
 			{
 				Client & cl = find_client(parameter);
+				if (cl.get_nickname()=="NOT_FOUND")
+					return;
 				if (it->in_channel(cl))
 				{	
-					mode[0]=='+'? it->add_operator(cl): (mode[0]=='-' && it->is_operator(cl)? it->remove_operator(cl): (void)1);
-					std::string msg = RPL_NAMREPLY(client.get_nickname(), it->get_name(), it->get_list_of_users());
-					msg += ": 366 "+ cl.get_nickname() + " " + it->get_name() + " :End of /NAMES list.\r\n";
-					std::cout<<"list of operators "<<it->get_list_of_users()<<std::endl;
-					it->broadcast_message(client,msg,0);
+					if (mode == "+o")
+					{
+						it->add_operator(cl);
+						msg = RPL_MODESET(client.get_nickname(), it->get_name(), mode, cl.get_nickname());
+						it->broadcast_message(client,msg,0);
+					}
+					else if (mode=="-o" && it->is_operator(cl))
+					{
+						it->remove_operator(cl);
+						msg = RPL_MODESET(client.get_nickname(), it->get_name(), mode, cl.get_nickname());
+						it->broadcast_message(client,msg,0);
+					}
 				}
 			}
-            //   else if (mode == "-o")
-			// {
-			// 	Client & cl = find_client(parameter);
-			// 	if (it->in_channel(cl) && it->is_operator(cl))
-			// 		it->remove_operator(cl);
-			// }
             else if (mode == "+l")
 			{
-				std::cout<<"limit set"<<std::endl;
 				it->set_limit(std::stoi(parameter));
 				it->set_lim_state(true);
+				msg = RPL_MODESET(client.get_nickname(), it->get_name(), mode,parameter);
+				it->broadcast_message(client, msg, 0);
 			}
             else if (mode == "-l")
 			{
 				std::cout<<"limit removed"<<std::endl;
 				it->set_limit(MAX_CLIENTS);
 				it->set_lim_state(false);
+				msg = RPL_MODESET(client.get_nickname(), it->get_name(), mode,parameter);
+				it->broadcast_message(client, msg, 0);
 			}
 				
             else if (mode == "+i") it->set_invite_only(true);
