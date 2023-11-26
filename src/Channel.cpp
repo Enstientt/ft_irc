@@ -1,5 +1,8 @@
 #include "../headers/Channel.hpp"
 
+Channel::Channel(){
+    
+}
  void Channel::set_topic_protected(bool state)
         {
             this->is_topic_protected = state;
@@ -44,7 +47,7 @@ Channel::Channel(std::string name, std::string pass): name(name) {
             invite_only = false;
             rest = false;
             is_limited = false;
-            limit = INT_MAX;
+            limit = MAX_CLIENTS;
             i = "-i";
             t = "-t";
             k = "-k";
@@ -182,4 +185,9 @@ void Channel::set_lim_state(bool state)
 bool Channel::get_lim_state()
 {
     return this->is_limited ;
+}
+
+void Channel::add_invited(Client &client)
+{
+    _invites.push_back(client);
 }

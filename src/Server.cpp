@@ -319,6 +319,12 @@ void Server::execute_command(Client &client)
 		}
 		else if(cmd == "MODE")
 			handle_mode(client, command);
+		else if (cmd == "INVITE")
+		{
+			std::string channel;
+			iss>>channel;
+			invite(client, value, channel);
+		}
 	}
 
 void Server::acceptConnection() {
@@ -483,5 +489,64 @@ bool Server::nick_already_exist(std::string nick, Client &client)
 	}
 	return false;
 };
-
-
+Channel & Server::find_channel(std::string channel)
+{
+	std::vector<Channel>::iterator it = _channels.begin();
+	if (it != _channels.end())
+	{
+		for(;it!=_channels.end();it++)
+		{
+			if (it->get_name()==channel)
+			{
+				return *it;
+			}
+		}
+	}
+	channel_note_found.set_name("NOT_FOUND");
+	return channel_note_found;
+}
+void Server::invite(Client & client, std::string nickname, std::string channel)
+{
+	std::string msg;
+	if (nickname.empty() || channel.empty())
+	{
+		msg = ERR_NEEDMOREPARAMS(client.get_nickname(), "INVITE");
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		return;
+	}
+	Channel &chan = find_channel(channel);
+	Client  &cl = find_client(nickname);
+	if (cl.get_nickname()=="NOT_FOUND")
+	{
+		msg = ERR_NOSUCHNICK(client.get_nickname(), nickname);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		return;
+	}
+	if (chan.get_name()=="NOT_FOUND")
+	{
+		msg = ERR_NOSUCHCHANNEL(client.get_nickname(), channel);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		return;
+	}
+	if (chan.is_operator(client))
+	{
+		if (chan.in_channel(cl))
+		{
+			msg = ERR_USERONCHANNEL(client.get_nickname(), nickname, channel);
+			send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		}
+		else
+		{
+			chan.add_invited(cl);
+			msg = RPL_INVITING(server_name, nickname, channel);
+			send(client.getSocket(), msg.c_str(), msg.length(), 0);
+			msg = RPL_INVITATION(cl.get_nickname(), client.get_nickname(), channel);
+			send(cl.getSocket(), msg.c_str(), msg.length(), 0);
+		}
+	}
+	else
+	{
+		msg = ERR_CHANOPRIVSNEEDED(server_name, client.get_nickname(), channel);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+	}
+}

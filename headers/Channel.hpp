@@ -20,6 +20,7 @@ class Channel{
         bool rest;
         bool is_topic_protected;
     public:
+        Channel();
         Channel(std::string name, std::string pass);
         void set_topic_protected(bool state);
         std::string get_list_of_users();
@@ -35,6 +36,7 @@ class Channel{
         void add_client_to_channnel(Client &client);
         void add_operator(Client &client);
         void remove_operator(Client &client);
+        void add_invited(Client &client);
         bool is_invited(Client &client);
         bool is_operator(Client &client);
         void broadcast_message(Client &client, std::string message,int flag);

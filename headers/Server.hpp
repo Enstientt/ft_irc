@@ -30,11 +30,13 @@ private:
     void acceptConnection();
     void handleClient(int index);
     Client client_note_found;
+    Channel channel_note_found;
 public:
     Server() ;
     Server(std::string port, std::string password);
     ~Server();
     Client & find_client(std::string nick);
+    Channel & find_channel(std::string chan);
     void run();
     void pass(std::string password, std::string command, Client &client);
     bool nick_already_exist(std::string nick, Client &client);
@@ -44,5 +46,6 @@ public:
     void execute_command(Client &client);
     void join(Client &client, std::string target, std::string password);
     void handle_mode(Client &client, std::string &command);
+    void invite(Client &client, std::string nickname, std::string channel);
 };
 #endif

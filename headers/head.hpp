@@ -33,4 +33,7 @@
 #define RPL_NAMREPLY(nick, channel, users) ": 353 " +  nick + " = " + channel + " :" + users + "\r\n"
 #define RPL_ENDOFNAMES(nickname, channel) (": 366 "+ nick + " " + channel + " :End of /NAMES list.\r\n")
 #define RPL_MODESET(operator, channel, mode, nick) (":" + operator + " MODE " + channel + " " + mode + "  " + nick + "\r\n")
+#define RPL_INVITING(server, nick, channel) (":"+ server +" 341 "+ nick +" "+ channel+ "\r\n")
+#define ERR_CHANOPRIVSNEEDED(server, nick, channel) ( ":"+ server+ " 482 "+ nick+ " " +channel+" :You're not channel operator\r\n")
+#define RPL_INVITATION(nick, inviter, channel)(":" + inviter +" PRIVMSG "+ nick +" :\001INVITE " +channel +"\001\r\n")
 #endif
