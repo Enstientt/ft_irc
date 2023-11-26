@@ -590,10 +590,10 @@ void Server::kick(Client &client, std::string channel, std::string user, std::st
 		}
 		else
 		{
+			msg = RPL_KICKED(server_name, user, channel, client.get_nickname(), message);
+			chan.broadcast_message(client,msg ,0);
 			chan.remove_client_from_channel(cl);
 			chan.is_operator(cl)? chan.remove_operator(cl) : (void)1;
-			msg = RPL_KICKED(server_name, user, channel, client.get_nickname(), message);
-			send(cl.getSocket(), msg.c_str(), msg.length(), 0);
 		}
 	}
 	else
