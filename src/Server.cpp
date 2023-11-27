@@ -645,15 +645,15 @@ void Server::topic(Client &client, std::string channel, std::string topic)
 			send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		}
 	}
-	else if (topic.empty())
-	{
-		msg = IRC_RPL_TOPIC(server_name, client.get_nickname(), channel, chan.get_topic());
-		send(client.getSocket(), msg.c_str(), msg.length(), 0);
-	}
-	else
+	else if (chan.get_topic_state() && !topic.empty())
 	{
 		chan.set_topic(topic);
 		msg = IRC_RPL_TOPIC(server_name, client.get_nickname(), channel, topic);
 		chan.broadcast_message(client, msg, 0);		
+	}
+	else if (topic.empty())
+	{
+		msg = IRC_RPL_TOPIC(server_name, client.get_nickname(), channel, chan.get_topic());
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
 	}
 }
