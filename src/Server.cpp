@@ -332,6 +332,12 @@ void Server::execute_command(Client &client)
 			getline(iss, message);
 			kick(client, value, nickname, message);
 		}
+		else if (cmd == "TOPIC")
+		{
+			std::string top;
+			getline(iss, top);
+			topic(client, value, top);
+		}
 	}
 
 void Server::acceptConnection() {
@@ -600,5 +606,54 @@ void Server::kick(Client &client, std::string channel, std::string user, std::st
 	{
 		msg = ERR_CHANOPRIVSNEEDED(server_name, client.get_nickname(), channel);
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+	}
+}
+
+void Server::topic(Client &client, std::string channel, std::string topic)
+{
+		std::string msg;
+	if (channel.empty())
+	{
+		msg = ERR_NEEDMOREPARAMS(client.get_nickname(), "TOPIC");
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		return;
+	}
+	Channel &chan = find_channel(channel);
+	if (chan.get_name()=="NOT_FOUND")
+	{
+		msg = ERR_NOSUCHCHANNEL(client.get_nickname(), channel);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		return;
+	}
+	if (chan.in_channel(client))
+	{
+		msg = ERR_NOTONCHANNEL(client.get_nickname(),channel);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		return;
+	}
+	if (chan.get_topic_state() && !topic.empty())
+	{
+		if(chan.is_operator(client))
+		{
+			chan.set_topic(topic);
+			msg = IRC_RPL_TOPIC(server_name, client.get_nickname(), channel, topic);
+			chan.broadcast_message(client, msg, 0);
+		}
+		else
+		{
+			msg = ERR_CHANOPRIVSNEEDED(server_name, client.get_nickname(), channel);
+			send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		}
+	}
+	else if (topic.empty())
+	{
+		msg = IRC_RPL_TOPIC(server_name, client.get_nickname(), channel, chan.get_topic());
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+	}
+	else
+	{
+		chan.set_topic(topic);
+		msg = IRC_RPL_TOPIC(server_name, client.get_nickname(), channel, topic);
+		chan.broadcast_message(client, msg, 0);		
 	}
 }

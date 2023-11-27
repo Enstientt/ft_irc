@@ -47,5 +47,6 @@ public:
     void handle_mode(Client &client, std::string &command);
     void invite(Client &client, std::string nickname, std::string channel);
     void kick(Client &client, std::string channel, std::string user, std::string message);
+    void topic(Client &client,std::string channel, std::string topic);
 };
 #endif

@@ -24,6 +24,9 @@ class Channel{
         Channel();
         Channel(std::string name, std::string pass);
         void set_topic_protected(bool state);
+        bool get_topic_state();
+        void set_topic(std::string topic);
+        std::string get_topic();
         std::string get_list_of_users();
         void set_rest(bool rs);
         bool get_rest();

@@ -21,8 +21,7 @@
     ":" server " 331 " nick " " channel " :No topic is set\r\n"
 #define ERR_CHANNELISFULL(client, channel) (":localhost 471 " + client + " " + channel + " :Cannot join channel (+l)\r\n")
 #define ERR_INVITEONLYCHAN(client, channel) (":localhost 473 " + client + " " + channel + " :Cannot join channel (+i)\r\n")
-#define IRC_RPL_TOPIC(server, nick, channel, topic) \
-    ":" server " 332 " nick " " channel " :" topic "\r\n"
+#define IRC_RPL_TOPIC(server, nick, channel, topic)(":"+server+ " 332 " +nick +" "+ channel+ " :" +topic +"\r\n")
 #define ERR_USERONCHANNEL(client, nick, channel) (":localhost 443 " + client + " " + nick + " " + channel + " is already on channel\r\n")
 #define ERR_CHANNELISFULL(client, channel) (":localhost 471 " + client + " " + channel + " :Cannot join channel (+l)\r\n")
 #define RPL_JOIN(user_forma, client, channel) (user_forma + " JOIN :" + channel + "\r\n")

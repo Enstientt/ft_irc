@@ -207,3 +207,18 @@ void Channel::remove_client_from_channel(Client &client)
         }
     }
 }
+
+bool Channel::get_topic_state()
+{
+    return is_topic_protected;
+}
+
+std::string Channel::get_topic()
+{
+    return _topic;
+}
+
+void Channel::set_topic(std::string topic)
+{
+    this->_topic = topic;
+}
