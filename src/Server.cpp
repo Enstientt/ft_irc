@@ -625,7 +625,7 @@ void Server::topic(Client &client, std::string channel, std::string topic)
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		return;
 	}
-	if (chan.in_channel(client))
+	if (!chan.in_channel(client))
 	{
 		msg = ERR_NOTONCHANNEL(client.get_nickname(),channel);
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
