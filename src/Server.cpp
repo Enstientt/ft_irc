@@ -19,7 +19,7 @@ Server:: Server(std::string port, std::string password): port(port) , password(p
 			exit(EXIT_FAILURE);
 		}
 		//non-block fd
-		if (fcntl(serverSocket, F_SETFD, O_NONBLOCK) ==-1)
+		if (fcntl(serverSocket, F_SETFL, O_NONBLOCK) ==-1)
 		{
 			perror("fcntl");
 			exit(EXIT_FAILURE);
