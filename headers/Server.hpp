@@ -37,6 +37,7 @@ public:
     Client & find_client(std::string nick);
     Channel & find_channel(std::string chan);
     void run();
+    void cleanServer();
     void pass(std::string password, std::string command, Client &client);
     bool nick_already_exist(std::string nick, Client &client);
     void nick(std::string nick , Client &client, int flag );

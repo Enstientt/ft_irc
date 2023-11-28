@@ -222,8 +222,8 @@ void Server::handle_mode(Client &client, std::string& command)
 {
     std::istringstream iss(command);
     std::string msg, cmd, name, mode, parameter;
-    iss >> cmd>>name >> mode >> parameter;
-
+    iss >> cmd >>name >> mode;
+	getline(iss , parameter);
     std::vector<Channel>::iterator it = _channels.begin();
     for (; it != _channels.end(); ++it)
     {
@@ -231,8 +231,8 @@ void Server::handle_mode(Client &client, std::string& command)
         {
             if (mode == "+k")
 			{
-				std::cout<<"pass set "<<std::endl;
 				it->set_pass(parameter);
+				std::cout<< it->get_pass()<<"*"<<std::endl;
 				it->set_rest(true);
 			}
             else if (mode == "-k")
@@ -314,7 +314,7 @@ void Server::execute_command(Client &client)
 		{
 
 			std::string pass;
-			iss>>pass;
+			getline(iss, pass);
 			join(client, value ,pass);
 		}
 		else if(cmd == "MODE")
@@ -370,11 +370,11 @@ void Server::acceptConnection() {
 	}
 void Server::handleClient(int index) {
         std::vector<Client>::iterator it;
-        char buffer[1024];
-        bzero(buffer, 1024);
+        char buffer[512];
+        bzero(buffer, 512);
         // Attempt to receive 1 byte from the client
         int bytesRead = recv(fds[index].fd, buffer, sizeof(buffer), MSG_PEEK);
-        if (bytesRead > 0)
+        if (bytesRead > 0 && bytesRead <= 512)
         {
             std::string str(buffer);
             buffer[bytesRead] = '\0';
@@ -410,8 +410,9 @@ void Server::handleClient(int index) {
             close(fds[index].fd);
             fds[index].fd = -1;
         }
-        else
-            perror("recv");
+		cleanServer();
+        // else
+        //     perror("recv");
     }
 
 void Server::join(Client &client, std::string target, std::string pass)
@@ -655,5 +656,22 @@ void Server::topic(Client &client, std::string channel, std::string topic)
 	{
 		msg = IRC_RPL_TOPIC(server_name, client.get_nickname(), channel, chan.get_topic());
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+	}
+}
+
+void Server::cleanServer(){
+	std::vector<Channel>::iterator it = _channels.begin();
+	std::vector<Channel>::iterator tmp;
+	if (it !=_channels.end())
+	{ 
+		for ( ; it !=_channels.end(); it++)
+		{
+			if(it->channel_size() == 0)
+			{
+				tmp = _channels.erase(it);
+				if (tmp == _channels.end())
+					break;
+			}
+		}
 	}
 }
