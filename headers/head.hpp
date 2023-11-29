@@ -15,7 +15,7 @@
 #define IRC_JOIN_MSG(nick, channel,users)( ": 331 " + nick + " " + channel + " :No topic is set\r\n" \
         + ": 353 " +  nick + " = " + channel + " :" + users + "\r\n" \
         +": 366 "+ nick + " " + channel + " :End of /NAMES list.\r\n")
-#define IRC_PRIVMSG_MSG(nick, channel, message) (":" + nick  + " PRIVMSG " + channel + " :" + message + "\r\n")
+#define IRC_PRIVMSG_MSG(nick, channel, message) (":" + nick  + " PRIVMSG " + channel + " " + message + "\r\n")
 #define RPL_PRIVMSG(nick, username, target, message) (":" + nick + "!" + username + "@localhost PRIVMSG " + target + "  :" + message + "\r\n")
 #define IRC_RPL_NOTOPIC(server, nick, channel) \
     ":" server " 331 " nick " " channel " :No topic is set\r\n"
@@ -37,4 +37,6 @@
 #define RPL_INVITATION(nick, inviter, channel)(":" + inviter +" PRIVMSG "+ nick +" :\001INVITE " +channel +"\001\r\n")
 #define RPL_KICKED(server, nick, channel, kicker, comment) ":" + server + " KICK "+ channel+ " " +nick +" :" + kicker +" "+ comment + "\r\n"
 #define ERR_USERNOTINCHANNEL(server, nick, user, channel) ":" +server+ " 441 "+ nick+ " "+ user +" " +channel +" :They aren't on that channel\r\n"
+#define ERR_WRONG_COMMAND(servername, client, command)(":" + servername +  " 421 " + client +" " + command+  " :Unknown command\r\n" )
+#define ERR_ALREADYREGISTRED(servername, client) (": "+ servername+  "462 " + client + ":You may not reregister\r\n")
 #endif

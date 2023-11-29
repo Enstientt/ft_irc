@@ -113,7 +113,12 @@ void Server::nick(std::string nick , Client &client, int flag )
 	//if not authenticate just processd with authentication
 	if (!client.get_pwd().empty() && client.auth() == false)
 	{
-		if (nick_already_exist(nick, client) == false)
+		if (!isValidNick(nick))
+		{
+			message = server_name + "432 "+ nick+ " :Erroneous Nickname\r\n";
+			send(client.getSocket(), message.c_str(), message.length(), 0);
+		}
+		else if (nick_already_exist(nick, client) == false)
 		{
 			client.set_nickName(nick);
 		}
@@ -126,7 +131,12 @@ void Server::nick(std::string nick , Client &client, int flag )
 	//changing the nickname
 	else if ( client.auth() == true)
 	{
-		if (nick_already_exist(nick, client) == false)
+		if (!isValidNick(nick))
+		{
+			message = server_name + "432 "+ client.get_nickname() + nick+ " :Erroneous Nickname\r\n";
+			send(client.getSocket(), message.c_str(), message.length(), 0);
+		}
+		else if (nick_already_exist(nick, client) == false)
 		{
 			message = ": nickname "+ client.get_nickname() + " change to  " + nick +"\r\n";
 			client.set_nickName(nick);
@@ -138,25 +148,20 @@ void Server::nick(std::string nick , Client &client, int flag )
 		}
 	}
 }
-void Server::user(std::string nick, std::string mode, std::string hostName, std::string realName , Client &client)
+void Server::user(std::string username, std::string mode, std::string hostName, std::string realName , Client &client)
 {
 	if (!client.get_pwd().empty() && !client.get_nickname().empty() && client.auth() == false)
 	{
-
-		if (nick != client.get_nickname())
-		{
-			std::string message = "error :the  nickName in USER command mismatch the correct one\r\n";
-			send(client.getSocket(), message.c_str(), message.length(), 0);
-			return;
-		}
-		else
-		{
-			std::string client_add = inet_ntoa(client.getAddress().sin_addr);
-			std::string welcomeMessage = ": 001 " + nick + " :Welcome " + nick + " to the Internet Relay Chat " + user_forma(nick, realName,client_add)+ "\r\n";
-			client.set_user(realName);
-			client.setAuth(true);
-			send(client.getSocket(), welcomeMessage.c_str(), welcomeMessage.length(), 0);
-		}
+		std::string client_add = inet_ntoa(client.getAddress().sin_addr);
+		std::string welcomeMessage = ": 001 " + client.get_nickname() + " :Welcome " + client.get_nickname() + " to the Internet Relay Chat " + user_forma(client.get_nickname(), realName,client_add)+ "\r\n";
+		client.set_user(username,hostName,server_name, realName);
+		client.setAuth(true);
+		send(client.getSocket(), welcomeMessage.c_str(), welcomeMessage.length(), 0);
+	}
+	if (client.auth())
+	{
+		std::string message = ERR_ALREADYREGISTRED(server_name, client.get_nickname());
+		send(client.getSocket(), message.c_str(), message.length(),0);
 	}
 }
 void Server::privmsg(Client &client, std::string command){
@@ -165,13 +170,14 @@ void Server::privmsg(Client &client, std::string command){
     std::string message;
     iss >> cmd >> target >> std::ws;
     std::getline(iss, msg);
-
+	if (isMultipleWords(msg) && msg.empty())
+		msg = msg.substr(2);
 	if (target.empty() || msg.empty())
 	{
 		message = ERR_NEEDMOREPARAMS(client.get_nickname(), cmd);
 		send(client.getSocket(), message.c_str(), message.length(), 0);
 	}
-    //handle channels
+    //handle channel
     else if (target[0] =='#')
     {
         std::vector<Channel>::iterator it = _channels.begin();
@@ -231,8 +237,9 @@ void Server::handle_mode(Client &client, std::string& command)
         {
             if (mode == "+k")
 			{
-				it->set_pass(parameter);
-				std::cout<< it->get_pass()<<"*"<<std::endl;
+				it->set_pass(parameter.substr(1));
+				std::cout <<"the pasword is ";
+				std::cout<< it->get_pass();
 				it->set_rest(true);
 			}
             else if (mode == "-k")
@@ -292,6 +299,7 @@ void Server::execute_command(Client &client)
 		std::string command = client.getMessage();
 		std::string cmd;
 		std::string value;
+		command = filterString(command);
 		std::istringstream iss(command);
 		iss >> cmd >> value;
 		if (cmd == "PASS")
@@ -315,12 +323,8 @@ void Server::execute_command(Client &client)
 
 			std::string pass;
 			getline(iss, pass);
-			if (!pass.empty() && isMultipleWords(pass))
-			{
-				pass = pass.substr(1);
-				std::cout<<"kandkhl"<<std::endl;
-			}
-			std::cout<<"in the exec scop "<<pass<<std::endl;
+			if (!pass.empty())
+				isMultipleWords(pass)?pass = pass.substr(2):pass=pass.substr(1);
 			join(client, value ,pass);
 		}
 		else if(cmd == "MODE")
@@ -343,6 +347,12 @@ void Server::execute_command(Client &client)
 			std::string top;
 			getline(iss, top);
 			topic(client, value, top);
+		}
+		else if (cmd != "QUIT")
+		{
+			std::string msg;
+			msg = ERR_WRONG_COMMAND(server_name, client.get_nickname(), cmd);
+			send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		}
 	}
 
@@ -435,6 +445,7 @@ void Server::join(Client &client, std::string target, std::string &pass)
     //check if the channel exist
     if (it != _channels.end())
     {
+		std::string ps = it->get_pass();
         if (it->in_channel(client))
         {
 			msg = ERR_USERONCHANNEL(client.get_nickname(), client.get_nickname(), it->get_name());
@@ -461,10 +472,8 @@ void Server::join(Client &client, std::string target, std::string &pass)
         }
         if (it->get_rest())
         {
-			if (pass != it->get_pass())
+			if (pass != ps)
 			{
-				std::cout<< "this is the channel pass"<<it->get_pass()<<std::endl;
-				std::cout<< "this is the pass"<<pass<<std::endl;
 				msg =ERR_BADCHANNELKEY(client.get_nickname(), it->get_name());
 				send(client.getSocket(), msg.c_str(),msg.length(), 0);
 				toggler = 1;
@@ -618,8 +627,8 @@ void Server::kick(Client &client, std::string channel, std::string user, std::st
 
 void Server::topic(Client &client, std::string channel, std::string topic)
 {
-		std::string msg;
-	if (channel.empty())
+	std::string msg;
+	if (channel.empty() || channel[0]!='#')
 	{
 		msg = ERR_NEEDMOREPARAMS(client.get_nickname(), "TOPIC");
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
@@ -652,7 +661,7 @@ void Server::topic(Client &client, std::string channel, std::string topic)
 			send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		}
 	}
-	else if (chan.get_topic_state() && !topic.empty())
+	else if (!chan.get_topic_state() && !topic.empty())
 	{
 		chan.set_topic(topic);
 		msg = IRC_RPL_TOPIC(server_name, client.get_nickname(), channel, topic);
@@ -688,4 +697,30 @@ bool Server::isMultipleWords(std::string str)
 	if (ret > 1)
 		return true;
 	return false;
+}
+
+std::string Server::filterString(const std::string& str) {
+    std::string result;
+    for (size_t i = 0; i < str.size(); ++i) {
+        if (str[i] != '\r' && str[i] != '\n') {
+            result += str[i];
+        }
+    }
+    return result;
+}
+
+bool Server::isValidNick(const std::string& nick) {
+    if (nick.size() > 9) {
+        return false;
+    }
+
+    std::string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789[]\\`_^{|}";
+
+    for (size_t i = 0; i < nick.size(); ++i) {
+        if (validChars.find(nick[i]) == std::string::npos) {
+            return false;
+        }
+    }
+
+    return true;
 }

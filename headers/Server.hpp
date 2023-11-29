@@ -38,8 +38,10 @@ public:
     Channel & find_channel(std::string chan);
     void run();
     void cleanServer();
+    std::string filterString(const std::string &str);
     void pass(std::string password, std::string command, Client &client);
     bool nick_already_exist(std::string nick, Client &client);
+    bool isValidNick(const std::string& nick);
     bool isMultipleWords(std::string str);
     void nick(std::string nick , Client &client, int flag );
     void user(std::string nick, std::string mode, std::string hostName, std::string realName , Client &client);
