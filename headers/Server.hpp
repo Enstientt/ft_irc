@@ -40,11 +40,12 @@ public:
     void cleanServer();
     void pass(std::string password, std::string command, Client &client);
     bool nick_already_exist(std::string nick, Client &client);
+    bool isMultipleWords(std::string str);
     void nick(std::string nick , Client &client, int flag );
     void user(std::string nick, std::string mode, std::string hostName, std::string realName , Client &client);
     void privmsg(Client &client, std::string command);
     void execute_command(Client &client);
-    void join(Client &client, std::string target, std::string password);
+    void join(Client &client, std::string target, std::string &password);
     void handle_mode(Client &client, std::string &command);
     void invite(Client &client, std::string nickname, std::string channel);
     void kick(Client &client, std::string channel, std::string user, std::string message);

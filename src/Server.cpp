@@ -19,7 +19,7 @@ Server:: Server(std::string port, std::string password): port(port) , password(p
 			exit(EXIT_FAILURE);
 		}
 		//non-block fd
-		if (fcntl(serverSocket, F_SETFL, O_NONBLOCK) ==-1)
+		if (fcntl(serverSocket, F_SETFD, O_NONBLOCK) ==-1)
 		{
 			perror("fcntl");
 			exit(EXIT_FAILURE);
@@ -315,6 +315,12 @@ void Server::execute_command(Client &client)
 
 			std::string pass;
 			getline(iss, pass);
+			if (!pass.empty() && isMultipleWords(pass))
+			{
+				pass = pass.substr(1);
+				std::cout<<"kandkhl"<<std::endl;
+			}
+			std::cout<<"in the exec scop "<<pass<<std::endl;
 			join(client, value ,pass);
 		}
 		else if(cmd == "MODE")
@@ -388,11 +394,11 @@ void Server::handleClient(int index) {
                     {
                         it->setMessage(str);
                         execute_command(*it);
+						break;
                     }
                 }
                 
             }
-            //the logic here
             std::cout << "client "<< index<< " :"<< str;
         }
         else if (bytesRead == 0 || bytesRead == -1) {
@@ -415,7 +421,7 @@ void Server::handleClient(int index) {
         //     perror("recv");
     }
 
-void Server::join(Client &client, std::string target, std::string pass)
+void Server::join(Client &client, std::string target, std::string &pass)
 {
     std::vector<Channel>::iterator it = _channels.begin();
     std::string msg;
@@ -674,4 +680,12 @@ void Server::cleanServer(){
 			}
 		}
 	}
+}
+
+bool Server::isMultipleWords(std::string str)
+{
+	int ret = std::count(str.begin(), str.end(), ' ');
+	if (ret > 1)
+		return true;
+	return false;
 }
