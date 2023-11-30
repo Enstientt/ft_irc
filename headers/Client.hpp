@@ -37,6 +37,6 @@ public:
     std::string get_user();
     std::string get_pwd();
     void set_pwd(std::string pwd);
+    void addtosetMessage(std::string message);
 };
-
 #endif

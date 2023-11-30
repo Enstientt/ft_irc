@@ -158,7 +158,7 @@ void Server::user(std::string username, std::string mode, std::string hostName, 
 		client.setAuth(true);
 		send(client.getSocket(), welcomeMessage.c_str(), welcomeMessage.length(), 0);
 	}
-	if (client.auth())
+	else if (client.auth())
 	{
 		std::string message = ERR_ALREADYREGISTRED(server_name, client.get_nickname());
 		send(client.getSocket(), message.c_str(), message.length(),0);
@@ -402,14 +402,18 @@ void Server::handleClient(int index) {
                 {
                     if (it->getSocket() == fds[index].fd)
                     {
-                        it->setMessage(str);
-                        execute_command(*it);
+                        it->addtosetMessage(str);
+						if (it->getMessage().find('\n') != std::string::npos)
+                		{
+							execute_command(*it);
+            				std::cout << "client "<< index<< " :"<< it->getMessage();
+							it->setMessage("");
+						}
 						break;
                     }
                 }
                 
             }
-            std::cout << "client "<< index<< " :"<< str;
         }
         else if (bytesRead == 0 || bytesRead == -1) {
             // Client has closed the connection

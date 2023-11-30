@@ -11,6 +11,10 @@
         return address;
     }
 
+    void Client::addtosetMessage(std::string message){
+        this->message += message;
+    }
+
     void Client::setMessage(std::string message){
         this->message = message;
     }

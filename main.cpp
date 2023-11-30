@@ -1,6 +1,16 @@
 #include "headers/Server.hpp"
 
-int main(int arc, char** argv){
+void signal_handler(int signal)
+{
+    (void)signal;
+    std::cout << "\n" << std::endl;
+    exit(EXIT_SUCCESS);
+}
+
+
+int main(int arc, char** argv)
+{
+    signal(SIGINT, signal_handler);
     // Create an instance of the Server class
     if (arc == 3)
     {
