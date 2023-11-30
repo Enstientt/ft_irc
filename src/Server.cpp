@@ -90,7 +90,7 @@ void Server::run() {
 			}
 		}
 	};
-void Server::pass(std::string password, std::string command, Client &client)
+void Server::pass(std::string password,Client &client)
 {
 	if (client.auth() == false && client.get_pwd().empty())
 	{
@@ -107,7 +107,7 @@ void Server::pass(std::string password, std::string command, Client &client)
 	}
 };
 
-void Server::nick(std::string nick , Client &client, int flag )
+void Server::nick(std::string nick , Client &client )
 {
 	std::string message;
 	//if not authenticate just processd with authentication
@@ -118,7 +118,7 @@ void Server::nick(std::string nick , Client &client, int flag )
 			message = server_name + "432 "+ nick+ " :Erroneous Nickname\r\n";
 			send(client.getSocket(), message.c_str(), message.length(), 0);
 		}
-		else if (nick_already_exist(nick, client) == false)
+		else if (nick_already_exist(nick) == false)
 		{
 			client.set_nickName(nick);
 		}
@@ -136,7 +136,7 @@ void Server::nick(std::string nick , Client &client, int flag )
 			message = server_name + "432 "+ client.get_nickname() + nick+ " :Erroneous Nickname\r\n";
 			send(client.getSocket(), message.c_str(), message.length(), 0);
 		}
-		else if (nick_already_exist(nick, client) == false)
+		else if (nick_already_exist(nick) == false)
 		{
 			message = ": nickname "+ client.get_nickname() + " change to  " + nick +"\r\n";
 			client.set_nickName(nick);
@@ -150,11 +150,12 @@ void Server::nick(std::string nick , Client &client, int flag )
 }
 void Server::user(std::string username, std::string mode, std::string hostName, std::string realName , Client &client)
 {
+	(void) mode;
 	if (!client.get_pwd().empty() && !client.get_nickname().empty() && client.auth() == false)
 	{
 		std::string client_add = inet_ntoa(client.getAddress().sin_addr);
 		std::string welcomeMessage = ": 001 " + client.get_nickname() + " :Welcome " + client.get_nickname() + " to the Internet Relay Chat " + user_forma(client.get_nickname(), realName,client_add)+ "\r\n";
-		client.set_user(username,hostName,server_name, realName);
+		client.set_user(username,hostName, realName);
 		client.setAuth(true);
 		send(client.getSocket(), welcomeMessage.c_str(), welcomeMessage.length(), 0);
 	}
@@ -238,58 +239,68 @@ void Server::handle_mode(Client &client, std::string& command)
             if (mode == "+k")
 			{
 				it->set_pass(parameter.substr(1));
-				std::cout <<"the pasword is ";
-				std::cout<< it->get_pass();
 				it->set_rest(true);
 			}
             else if (mode == "-k")
-			{
-				std::cout<<"the pass removed"<<std::endl;
-				it->set_pass("");
 				it->set_rest(false);
+            else if (mode == "+t")
+			{
+				parameter = "";
+				it->set_topic_protected(true);
 			}
-            else if (mode == "+t") it->set_topic_protected(true);
-            else if (mode == "-t") it->set_topic_protected(false);
+            else if (mode == "-t")
+			{
+				parameter = "";
+				it->set_topic_protected(false);
+			}
             else if (mode == "+o" || mode =="-o")
 			{
+				parameter = parameter.substr(1);
 				Client & cl = find_client(parameter);
 				if (cl.get_nickname()=="NOT_FOUND")
+				{
+					msg = ERR_NOSUCHNICK(client.get_nickname(), parameter);
+					send(client.getSocket(),msg.c_str(), msg.length(), 0 );
 					return;
-				if (it->in_channel(cl))
+				}
+				else if (!it->in_channel(cl))
+				{
+					msg = ERR_USERNOTINCHANNEL(server_name, client.get_nickname(), parameter, name);
+					send(client.getSocket(),msg.c_str(), msg.length(), 0 );
+					return;
+				}
+				else
 				{	
-					if (mode == "+o")
-					{
+					if (mode == "+o" && !it->is_operator(cl))
 						it->add_operator(cl);
-						msg = RPL_MODESET(client.get_nickname(), it->get_name(), mode, cl.get_nickname());
-						it->broadcast_message(client,msg,0);
-					}
 					else if (mode=="-o" && it->is_operator(cl))
-					{
 						it->remove_operator(cl);
-						msg = RPL_MODESET(client.get_nickname(), it->get_name(), mode, cl.get_nickname());
-						it->broadcast_message(client,msg,0);
-					}
 				}
 			}
             else if (mode == "+l")
 			{
 				it->set_limit(std::stoi(parameter));
 				it->set_lim_state(true);
-				msg = RPL_MODESET(client.get_nickname(), it->get_name(), mode,parameter);
-				it->broadcast_message(client, msg, 0);
 			}
             else if (mode == "-l")
 			{
-				std::cout<<"limit removed"<<std::endl;
 				it->set_limit(MAX_CLIENTS);
 				it->set_lim_state(false);
-				msg = RPL_MODESET(client.get_nickname(), it->get_name(), mode,parameter);
-				it->broadcast_message(client, msg, 0);
 			}
 				
-            else if (mode == "+i") it->set_invite_only(true);
-            else if (mode == "-i") it->set_invite_only(false);
-            break;
+           else if (mode == "+i")
+    			it->set_invite_only(true);
+		else if (mode == "-i")
+    			it->set_invite_only(false);
+		else
+		{
+			msg = ERR_UNKNOWNMODE(client.get_nickname(), mode);
+			send(client.getSocket(), msg.c_str(), msg.length(), 0);
+			return;
+		}
+		msg = RPL_MODESET(client.get_nickname(), it->get_name(), mode, parameter);
+    	it->broadcast_message(client, msg, 0);
+        break;
         }
     }
 }
@@ -303,9 +314,9 @@ void Server::execute_command(Client &client)
 		std::istringstream iss(command);
 		iss >> cmd >> value;
 		if (cmd == "PASS")
-			pass(value, command, client);
+			pass(value,client);
 		else if (cmd == "NICK")
-			nick(value, client, 0);
+			nick(value, client);
 		else if (cmd == "USER")
 		{
 			std::string mode;
@@ -347,6 +358,10 @@ void Server::execute_command(Client &client)
 			std::string top;
 			getline(iss, top);
 			topic(client, value, top);
+		}
+		else if (cmd == "BOTE")
+		{
+			handle_bote(client);
 		}
 		else if (cmd != "QUIT")
 		{
@@ -409,7 +424,6 @@ void Server::handleClient(int index) {
             				std::cout << "client "<< index<< " :"<< it->getMessage();
 							it->setMessage("");
 						}
-						break;
                     }
                 }
                 
@@ -506,7 +520,7 @@ void Server::join(Client &client, std::string target, std::string &pass)
     }
 }
 //tools
-bool Server::nick_already_exist(std::string nick, Client &client)
+bool Server::nick_already_exist(std::string nick)
 {
 	std::vector<Client>::iterator it = _clients.begin();
 	if (it == _clients.end())
@@ -727,4 +741,26 @@ bool Server::isValidNick(const std::string& nick) {
     }
 
     return true;
+}
+
+void Server::handle_bote(Client &client){
+
+	std::string trigger("KNOCK");
+    Client &boteClient = find_client("BOTE");
+	if ( boteClient.get_nickname() == "NOT_FOUND")
+	{
+		std::cout<<"the bot is not available"<<std::endl;
+		return;
+	}
+    send(boteClient.getSocket(), trigger.c_str(), trigger.length(), 0);
+    char buffer[256];
+    memset(buffer, 0, sizeof(buffer));
+    int bytes_received = recv(boteClient.getSocket(), buffer, sizeof(buffer), 0);
+    if (bytes_received == -1 || bytes_received == 0)
+		std::cout<<"Error"<<std::endl;
+	else {
+		std::string buff(buffer);
+		std::string message = RPL_PRIVMSG(boteClient.get_nickname(), user_forma(boteClient.get_nickname(), boteClient.get_user(),"localhost"), client.get_nickname(),buff );
+        send(client.getSocket(), message.c_str(), message.length(), 0);
+    }
 }

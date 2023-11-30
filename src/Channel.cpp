@@ -36,7 +36,7 @@ bool Channel::is_invite_only() const {
     };
 
 bool Channel::is_full() const {
-        return _users.size() >= limit;
+        return (int)_users.size() >= limit;
     }
 
 bool Channel::has_password() const {

@@ -3,7 +3,6 @@
 void signal_handler(int signal)
 {
     (void)signal;
-    std::cout << "\n" << std::endl;
     exit(EXIT_SUCCESS);
 }
 

@@ -33,7 +33,7 @@ public:
     int getSocket();
     void set_nickName(std::string nick);
     std::string get_nickname();
-    void set_user(std::string userName, std::string hostName,std::string serverName, std::string realName);
+    void set_user(std::string userName, std::string hostName, std::string realName);
     std::string get_user();
     std::string get_pwd();
     void set_pwd(std::string pwd);

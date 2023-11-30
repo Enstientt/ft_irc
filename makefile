@@ -5,7 +5,7 @@ SRCS = main.cpp ./src/Server.cpp ./src/Channel.cpp ./src/Client.cpp
 HEADERS = ./headers/Server.hpp  ./headers/Channel.hpp ./headers/head.hpp ./headers/Client.hpp  
 OBJS = $(SRCS:.cpp=.o)
 
-#FLAGS = -Wall -Wextra -Werror -std=c++98
+FLAGS = -Wall -Wextra -Werror -std=c++98
 
 CC = g++
 

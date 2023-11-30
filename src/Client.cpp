@@ -41,7 +41,7 @@
     {
         return this->nickName;
     }
-    void Client::set_user(std::string username, std::string hostName,std::string serverName, std::string realName)
+    void Client::set_user(std::string username, std::string hostName, std::string realName)
     {
         this->realname = realName;
         this->userName = username;

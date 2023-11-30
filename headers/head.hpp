@@ -39,4 +39,5 @@
 #define ERR_USERNOTINCHANNEL(server, nick, user, channel) ":" +server+ " 441 "+ nick+ " "+ user +" " +channel +" :They aren't on that channel\r\n"
 #define ERR_WRONG_COMMAND(servername, client, command)(":" + servername +  " 421 " + client +" " + command+  " :Unknown command\r\n" )
 #define ERR_ALREADYREGISTRED(servername, client) (": "+ servername+  "462 " + client + ":You may not reregister\r\n")
+#define ERR_UNKNOWNMODE(nickname, mode)(":472 " + nickname + " :is unknown mode" + mode +" to me\r\n")
 #endif
