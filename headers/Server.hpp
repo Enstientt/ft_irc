@@ -42,7 +42,8 @@ public:
     void pass(std::string password, Client &client);
     bool nick_already_exist(std::string nick);
     bool isValidNick(const std::string& nick);
-    bool isMultipleWords(std::string str);
+    int isMultipleWords(std::string str, char c);
+    void handleMulti(Client &client);
     void nick(std::string nick , Client &client);
     void user(std::string nick, std::string mode, std::string hostName, std::string realName , Client &client);
     void privmsg(Client &client, std::string command);

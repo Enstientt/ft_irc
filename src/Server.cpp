@@ -171,7 +171,7 @@ void Server::privmsg(Client &client, std::string command){
     std::string message;
     iss >> cmd >> target >> std::ws;
     std::getline(iss, msg);
-	if (isMultipleWords(msg) && msg.empty())
+	if (isMultipleWords(msg, ' ') && msg.empty())
 		msg = msg.substr(2);
 	if (target.empty() || msg.empty())
 	{
@@ -335,7 +335,7 @@ void Server::execute_command(Client &client)
 			std::string pass;
 			getline(iss, pass);
 			if (!pass.empty())
-				isMultipleWords(pass)?pass = pass.substr(2):pass=pass.substr(1);
+				isMultipleWords(pass,' ')?pass = pass.substr(2):pass=pass.substr(1);
 			join(client, value ,pass);
 		}
 		else if(cmd == "MODE")
@@ -420,7 +420,12 @@ void Server::handleClient(int index) {
                         it->addtosetMessage(str);
 						if (it->getMessage().find('\n') != std::string::npos)
                 		{
-							execute_command(*it);
+							if (isMultipleWords(it->getMessage(), '\n') > 1)
+								handleMulti(*it);
+							else
+							{
+								execute_command(*it);
+							}
             				std::cout << "client "<< index<< " :"<< it->getMessage();
 							it->setMessage("");
 						}
@@ -709,12 +714,12 @@ void Server::cleanServer(){
 	}
 }
 
-bool Server::isMultipleWords(std::string str)
+int Server::isMultipleWords(std::string str, char c)
 {
-	int ret = std::count(str.begin(), str.end(), ' ');
+	int ret = std::count(str.begin(), str.end(), c);
 	if (ret > 1)
-		return true;
-	return false;
+		return ret;
+	return 0;
 }
 
 std::string Server::filterString(const std::string& str) {
@@ -763,4 +768,19 @@ void Server::handle_bote(Client &client){
 		std::string message = RPL_PRIVMSG(boteClient.get_nickname(), user_forma(boteClient.get_nickname(), boteClient.get_user(),"localhost"), client.get_nickname(),buff );
         send(client.getSocket(), message.c_str(), message.length(), 0);
     }
+}
+
+void Server::handleMulti(Client &client)
+{
+	std::string ruby = client.getMessage();
+	std::string buffer = client.getMessage();
+	std::string ret;
+	int i = isMultipleWords(buffer, '\n');
+	for(int j = 0;j<i;j++)
+	{
+		ret = buffer.substr(ret.length(), buffer.find_first_of('\n') + 1);
+		client.setMessage(ret);
+		execute_command(client);
+	}
+	client.setMessage("");
 }

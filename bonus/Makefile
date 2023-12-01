@@ -1,8 +1,8 @@
-NAME = ircserv
+NAME = bote
 
-SRCS = main.cpp ./src/Server.cpp ./src/Channel.cpp ./src/Client.cpp 
+SRCS = bot.cpp
 
-HEADERS = ./headers/Server.hpp  ./headers/Channel.hpp ./headers/head.hpp ./headers/Client.hpp  
+# HEADERS = ./headers/Server.hpp  ./headers/Channel.hpp ./headers/head.hpp ./headers/Client.hpp  
 
 OBJS = $(SRCS:.cpp=.o)
 
@@ -15,7 +15,7 @@ all: $(NAME)
 $(NAME): $(OBJS)
 	$(CC) $(FLAGS) $(OBJS) -o $(NAME)
 
-%.o: %.cpp $(HEADERS)
+%.o: %.cpp
 	$(CC) $(FLAGS) -c $< -o $@
 clean:
 	rm -rf $(OBJS)
