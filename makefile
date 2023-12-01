@@ -12,6 +12,8 @@ CC = g++
 
 all: $(NAME)
 
+BONUS:
+	make -f ./bonus/Makefile
 $(NAME): $(OBJS)
 	$(CC) $(FLAGS) $(OBJS) -o $(NAME)
 
