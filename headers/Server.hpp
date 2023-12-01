@@ -25,6 +25,7 @@ private:
     int serverSocket;
     std::vector<Client> _clients;
     std::vector<Channel> _channels;
+    std::vector<Client> _server_operators;
     struct pollfd fds[MAX_CLIENTS + 1];
     void acceptConnection();
     void handleClient(int index);

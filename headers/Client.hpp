@@ -22,7 +22,7 @@ private:
     bool is_authenticate;
     std::string pwd;
 public:
-    Client(){};
+    Client();
     Client(int socket, const sockaddr_in& address);
     int getSocket() const;
     const sockaddr_in& getAddress() const;
