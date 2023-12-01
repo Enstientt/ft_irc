@@ -8,6 +8,9 @@
 #include <sstream>
 #include <cstdlib>
 #include <ctime> 
+#include <arpa/inet.h>
+#include <netdb.h>
+
 void handleQuotes(int socket)
 {
     const char* quotes[] = {
@@ -90,25 +93,36 @@ int main(int argc, char** argv)
 {
   if(argc == 4)
     {
+        struct addrinfo *res, hints;
+        int status;
         int bot_socket = socket(AF_INET, SOCK_STREAM, 0);
         if(bot_socket == -1)
         {
             std::cerr << "Failed to create socket. errno: " << errno << std::endl;
             exit(EXIT_FAILURE);
         }
-
+        int opt = 1;
+        if (setsockopt(bot_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))==-1)
+		{
+			perror("setsockopt");
+			exit(EXIT_FAILURE);
+		}
+        if (fcntl(bot_socket, F_SETFD, O_NONBLOCK) ==-1)
+		{
+			perror("fcntl");
+			exit(EXIT_FAILURE);
+		}
         sockaddr_in sockaddr;
-        memset(&sockaddr, 0, sizeof(sockaddr));
-        sockaddr.sin_family = AF_INET;
-        sockaddr.sin_port = htons(atoi(argv[2]));
+        memset(&hints, 0, sizeof(sockaddr));
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+     if((status = getaddrinfo(argv[1], argv[2], &hints, &res)) != 0)
+{
+    std::cerr << "getaddrinfo error: " << gai_strerror(status) << std::endl;
+    exit(EXIT_FAILURE);
+}
 
-        if(inet_pton(AF_INET, argv[1], &sockaddr.sin_addr) <= 0)
-        {
-            std::cerr << "inet_pton() failed. errno: " << errno << std::endl;
-            exit(EXIT_FAILURE);
-        }
-
-        if(connect(bot_socket, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) == -1)
+        if(connect(bot_socket, res->ai_addr, res->ai_addrlen) == -1)
         {
             std::cerr << "connect() failed. errno: " << errno << std::endl;
             exit(EXIT_FAILURE);
@@ -147,12 +161,15 @@ int main(int argc, char** argv)
             {
                 buffer[byte] = '\0';
                 std::string str(buffer);
+                std::cout<<str<<std::endl;
                 if (str == "KNOCK")
                 {
                     handleQuotes(bot_socket);
                 }
             }
         }
+        freeaddrinfo(res);
+        res = NULL;
     }
     else
     {
