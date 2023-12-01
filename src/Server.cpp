@@ -106,18 +106,26 @@ void Server::run()
 };
 void Server::pass(std::string password, Client &client)
 {
-	if (client.auth() == false && client.get_pwd().empty())
+	if (client.auth() == false)
 	{
 		if (password.empty())
 		{
 			send(client.getSocket(), ERR_NEEDMOREPARAMS(client.get_nickname(), "PASS").c_str(), ERR_NEEDMOREPARAMS(client.get_nickname(), "PASS").length(), 0);
 		}
 		else if (password != this->password)
+		{
+
 			send(client.getSocket(), ERR_PASSWDMISMATCH(client.get_nickname()).c_str(), ERR_PASSWDMISMATCH(client.get_nickname()).length(), 0);
+		}
 		else
 		{
 			client.set_pwd(password);
 		}
+	}
+	else
+	{
+		std::string message = ERR_ALREADYREGISTRED(server_name, client.get_nickname());
+		send(client.getSocket(), message.c_str(), message.length(), 0);
 	}
 };
 
@@ -250,7 +258,12 @@ void Server::handle_mode(Client &client, std::string &command)
 	std::vector<Channel>::iterator it = _channels.begin();
 	for (; it != _channels.end(); ++it)
 	{
-		if (it->get_name() == name && it->is_operator(client))
+		if (it->get_name() == name)
+			break;
+	}
+	if (it != _channels.end())
+	{
+		if (it->in_channel(client) && it->is_operator(client))
 		{
 			if (mode == "+k")
 			{
@@ -271,7 +284,7 @@ void Server::handle_mode(Client &client, std::string &command)
 			}
 			else if (mode == "+o" || mode == "-o")
 			{
-				parameter = parameter.substr(1);
+			    !parameter.empty()?parameter = parameter.substr(1) : "";
 				Client &cl = find_client(parameter);
 				if (cl.get_nickname() == "NOT_FOUND")
 				{
@@ -316,17 +329,34 @@ void Server::handle_mode(Client &client, std::string &command)
 			}
 			msg = RPL_MODESET(client.get_nickname(), it->get_name(), mode, parameter);
 			it->broadcast_message(client, msg, 0);
-			break;
+		}
+		else if (!it->in_channel(client))
+		{
+			msg = ERR_NOTONCHANNEL(client.get_nickname(), it->get_name());
+			send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		}
+		else
+		{
+			msg = ERR_CHANOPRIVSNEEDED(server_name, client.get_nickname(), it->get_name());
+			send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		}
 	}
+	else
+	{
+		msg = ERR_NOSUCHCHANNEL(client.get_nickname(), name);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+	}
 }
-bool stringExistsInArray(std::string target, std::string array[], int arraySize) {
-    for (int i = 0; i < arraySize; i++) {
-        if (array[i] == target) {
-            return true;
-        }
-    }
-    return false;
+bool stringExistsInArray(std::string target, std::string array[], int arraySize)
+{
+	for (int i = 0; i < arraySize; i++)
+	{
+		if (array[i] == target)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 void Server::execute_command(Client &client)
 {
@@ -335,26 +365,29 @@ void Server::execute_command(Client &client)
 	std::string cmd;
 	std::string value;
 	command = filterString(command);
-	std::string array[]={"PASS", "NICK", "USER","PRIVMSG","JOIN","MODE","INVITE","KICK","TOPIC","BOTE","QUIT"};
+	std::string array[] = {"PASS", "NICK", "USER", "PRIVMSG", "JOIN", "MODE", "INVITE", "KICK", "TOPIC", "BOTE", "QUIT"};
 	std::istringstream iss(command);
 	iss >> cmd >> value;
-	if (!client.auth())
+	if (cmd == "PASS")
 	{
-
-		if (cmd == "PASS")
-			pass(value, client);
-		else if (cmd == "NICK")
-			nick(value, client);
-		else if (cmd == "USER")
-		{
-			std::string mode;
-			std::string hostName;
-			std::string realName;
-			iss >> mode >> hostName >> realName;
-			user(value, mode, hostName, realName, client);
-		}
+		pass(value, client);
+		return;
 	}
-	else
+	else if (cmd == "NICK")
+	{
+		nick(value, client);
+		return;
+	}
+	else if (cmd == "USER")
+	{
+		std::string mode;
+		std::string hostName;
+		std::string realName;
+		iss >> mode >> hostName >> realName;
+		user(value, mode, hostName, realName, client);
+		return;
+	}
+	if (client.auth())
 	{
 
 		if (cmd == "PRIVMSG")
@@ -391,12 +424,16 @@ void Server::execute_command(Client &client)
 		}
 		else if (cmd == "BOTE")
 			handle_bote(client);
-		else if (stringExistsInArray(cmd, array, 11))
+		else if (!stringExistsInArray(cmd, array, 11))
 		{
 			std::string msg;
 			msg = ERR_WRONG_COMMAND(server_name, client.get_nickname(), cmd);
 			send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		}
+	}
+	else
+	{
+		// need to authenticate;
 	}
 }
 
@@ -644,7 +681,7 @@ void Server::kick(Client &client, std::string channel, std::string user, std::st
 	std::string msg;
 	if (user.empty() || channel.empty())
 	{
-		msg = ERR_NEEDMOREPARAMS(client.get_nickname(), "INVITE");
+		msg = ERR_NEEDMOREPARAMS(client.get_nickname(), "KICK");
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		return;
 	}
