@@ -195,8 +195,6 @@ void Server::privmsg(Client &client, std::string command)
 	std::string message;
 	iss >> cmd >> target >> std::ws;
 	std::getline(iss, msg);
-	if (isMultipleWords(msg, ' ') && msg.empty())
-		msg = msg.substr(2);
 	if (target.empty() || msg.empty())
 	{
 		message = ERR_NEEDMOREPARAMS(client.get_nickname(), cmd);
@@ -238,7 +236,7 @@ void Server::privmsg(Client &client, std::string command)
 		}
 		if (it != _clients.end())
 		{
-			message = IRC_PRIVMSG_MSG(client.get_nickname(), it->get_nickname(), msg);
+			message = RPL_PRIVMSG(client.get_nickname(), it->get_user(), target, msg);
 			send(it->getSocket(), message.c_str(), message.length(), 0);
 		}
 		else
@@ -284,7 +282,7 @@ void Server::handle_mode(Client &client, std::string &command)
 			}
 			else if (mode == "+o" || mode == "-o")
 			{
-			    !parameter.empty()?parameter = parameter.substr(1) : "";
+				!parameter.empty() ? parameter = parameter.substr(1) : "";
 				Client &cl = find_client(parameter);
 				if (cl.get_nickname() == "NOT_FOUND")
 				{
@@ -424,6 +422,8 @@ void Server::execute_command(Client &client)
 		}
 		else if (cmd == "BOTE")
 			handle_bote(client);
+		// else if (cmd == "QUIT")
+		// 	clearChannels(client);
 		else if (!stringExistsInArray(cmd, array, 11))
 		{
 			std::string msg;
@@ -434,6 +434,9 @@ void Server::execute_command(Client &client)
 	else
 	{
 		// need to authenticate;
+		std::string msg;
+		msg = ERR_NOTAUTHENTICATED(server_name, client.get_nickname());
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
 	}
 }
 
@@ -498,14 +501,14 @@ void Server::handleClient(int index)
 						{
 							execute_command(*it);
 						}
-						// std::cout << "client "<< index<< " :"<< it->getMessage();
+						std::cout << "client " << index << " :" << it->getMessage();
 						it->setMessage("");
 					}
 				}
 			}
 		}
 	}
-	else if (bytesRead == 0 || bytesRead == -1)
+	if (bytesRead == 0 || bytesRead == -1)
 	{
 		// Client has closed the connection
 		std::cout << "Client " << index << " disconnected." << std::endl;
@@ -514,10 +517,12 @@ void Server::handleClient(int index)
 		{
 			if (it->getSocket() == fds[index].fd)
 			{
+				clearChannels(*it);
 				_clients.erase(it);
 				break;
 			}
 		}
+		if (it!=_clients.end())
 		close(fds[index].fd);
 		fds[index].fd = -1;
 	}
@@ -577,6 +582,7 @@ void Server::join(Client &client, std::string target, std::string &pass)
 		if (toggler == 0)
 		{
 			it->add_client_to_channnel(client);
+			client.set_channels(it->get_name());
 			msg = RPL_JOIN(user_forma(client.get_nickname(), client.get_user(), inet_ntoa(client.getAddress().sin_addr)), client.get_nickname(), it->get_name());
 			it->broadcast_message(client, msg, 0);
 			msg = IRC_JOIN_MSG(client.get_nickname(), it->get_name(), it->get_list_of_users());
@@ -590,6 +596,7 @@ void Server::join(Client &client, std::string target, std::string &pass)
 		newChannel.add_client_to_channnel(client);
 		newChannel.add_operator(client);
 		_channels.push_back(newChannel);
+		client.set_channels(target);
 		msg = RPL_JOIN(user_forma(client.get_nickname(), client.get_user(), inet_ntoa(client.getAddress().sin_addr)), client.get_nickname(), target);
 		newChannel.broadcast_message(client, msg, 0);
 		msg = IRC_JOIN_MSG(client.get_nickname(), newChannel.get_name(), newChannel.get_list_of_users());
@@ -865,5 +872,25 @@ void Server::handleMulti(Client &client)
 		client.setMessage(ret);
 		execute_command(client);
 	}
-	client.setMessage("");
 }
+
+void Server::clearChannels(Client &client)
+{
+	std::vector<Channel>::iterator it = _channels.begin();
+	for (; it != _channels.end(); it++)
+	{
+		if(it->in_channel(client))
+			it->remove_client_from_channel(client);
+	}
+}
+
+// bool Server::isOnServer(Client &client){
+// 	std::vector<Client>::iterator it = _clients.begin();
+// 	for (;it !=_clients.end();it++)
+// 	{
+// 		if (it->get_nickname() == client.get_nickname()){
+// 			return true;
+// 		}
+// 	}
+// 	return false;
+// }

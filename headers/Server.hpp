@@ -39,11 +39,14 @@ public:
     Channel & find_channel(std::string chan);
     void run();
     void cleanServer();
+    void clearChannels(Client & client);
+    bool isOnServer(Client &client);
     std::string filterString(const std::string &str);
     void pass(std::string password, Client &client);
     bool nick_already_exist(std::string nick);
     bool isValidNick(const std::string& nick);
     int isMultipleWords(std::string str, char c);
+    bool is_onServer(Client &client);
     void handleMulti(Client &client);
     void nick(std::string nick , Client &client);
     void user(std::string nick, std::string mode, std::string hostName, std::string realName , Client &client);

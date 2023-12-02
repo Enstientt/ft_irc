@@ -20,6 +20,7 @@ private:
     std::string hostName;
     std::string userName;
     bool is_authenticate;
+    std::vector<std::string> _channels;
     std::string pwd;
 public:
     Client();
@@ -38,5 +39,7 @@ public:
     std::string get_pwd();
     void set_pwd(std::string pwd);
     void addtosetMessage(std::string message);
+    void set_channels(std::string channel);
+    std::vector<std::string > &get_channels();
 };
 #endif

@@ -68,3 +68,13 @@ void Client::set_pwd(std::string pwd)
 {
     this->pwd = pwd;
 }
+
+void Client::set_channels(std::string channel)
+{
+    _channels.push_back(channel);
+}
+
+std::vector<std::string> &Client::get_channels()
+{
+    return this->_channels;
+}

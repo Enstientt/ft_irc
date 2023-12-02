@@ -202,6 +202,8 @@ void Channel::remove_client_from_channel(Client &client)
             if (it->get_nickname()==client.get_nickname())
             {
                 _users.erase(it);
+                if (is_operator(client))
+                    _operators.erase(it);
                 break;
             }
         }
