@@ -203,21 +203,16 @@ void Server::privmsg(Client &client, std::string command)
 	// handle channel
 	else if (target[0] == '#')
 	{
-		std::vector<Channel>::iterator it = _channels.begin();
-		for (; it != _channels.end(); ++it)
-		{
-			if (it->get_name() == target)
-				break;
-		}
-		if (it == _channels.end())
+		Channel & chan = find_channel(target);
+		if (chan.get_name() == channel_note_found.get_name())
 		{
 			message = ERR_NOSUCHCHANNEL(client.get_nickname(), target);
 			send(client.getSocket(), message.c_str(), message.length(), 0);
 		}
-		else if (it->in_channel(client))
+		else if (chan.in_channel(client))
 		{
-			message = RPL_PRIVMSG(client.get_nickname(), client.get_user(), it->get_name(), msg);
-			it->broadcast_message(client, message, 1);
+			message = RPL_PRIVMSG(client.get_nickname(), client.get_user(), chan.get_name(), msg);
+			chan.broadcast_message(client, message, 1);
 		}
 		else
 		{
@@ -228,16 +223,11 @@ void Server::privmsg(Client &client, std::string command)
 	// handle users
 	else
 	{
-		std::vector<Client>::iterator it = _clients.begin();
-		for (; it != _clients.end(); ++it)
+		Client &cl = find_client(target);
+		if (cl.get_nickname() != client_note_found.get_nickname())
 		{
-			if (it->get_nickname() == target)
-				break;
-		}
-		if (it != _clients.end())
-		{
-			message = RPL_PRIVMSG(client.get_nickname(), it->get_user(), target, msg);
-			send(it->getSocket(), message.c_str(), message.length(), 0);
+			message = RPL_PRIVMSG(client.get_nickname(), cl.get_user(), target, msg);
+			send(cl.getSocket(), message.c_str(), message.length(), 0);
 		}
 		else
 		{
@@ -253,32 +243,32 @@ void Server::handle_mode(Client &client, std::string &command)
 	std::string msg, cmd, name, mode, parameter;
 	iss >> cmd >> name >> mode;
 	getline(iss, parameter);
-	std::vector<Channel>::iterator it = _channels.begin();
-	for (; it != _channels.end(); ++it)
+	Channel & chan = find_channel(name);
+	// for (; it != _channels.end(); ++it)
+	// {
+	// 	if (it->get_name() == name)
+	// 		break;
+	// }
+	if (chan.get_name() != channel_note_found.get_name())
 	{
-		if (it->get_name() == name)
-			break;
-	}
-	if (it != _channels.end())
-	{
-		if (it->in_channel(client) && it->is_operator(client))
+		if (chan.in_channel(client) && chan.is_operator(client))
 		{
 			if (mode == "+k")
 			{
-				it->set_pass(parameter.substr(1));
-				it->set_rest(true);
+				chan.set_pass(parameter.substr(1));
+				chan.set_rest(true);
 			}
 			else if (mode == "-k")
-				it->set_rest(false);
+				chan.set_rest(false);
 			else if (mode == "+t")
 			{
 				parameter = "";
-				it->set_topic_protected(true);
+				chan.set_topic_protected(true);
 			}
 			else if (mode == "-t")
 			{
 				parameter = "";
-				it->set_topic_protected(false);
+				chan.set_topic_protected(false);
 			}
 			else if (mode == "+o" || mode == "-o")
 			{
@@ -290,7 +280,7 @@ void Server::handle_mode(Client &client, std::string &command)
 					send(client.getSocket(), msg.c_str(), msg.length(), 0);
 					return;
 				}
-				else if (!it->in_channel(cl))
+				else if (!chan.in_channel(cl))
 				{
 					msg = ERR_USERNOTINCHANNEL(server_name, client.get_nickname(), parameter, name);
 					send(client.getSocket(), msg.c_str(), msg.length(), 0);
@@ -298,44 +288,44 @@ void Server::handle_mode(Client &client, std::string &command)
 				}
 				else
 				{
-					if (mode == "+o" && !it->is_operator(cl))
-						it->add_operator(cl);
-					else if (mode == "-o" && it->is_operator(cl))
-						it->remove_operator(cl);
+					if (mode == "+o" && !chan.is_operator(cl))
+						chan.add_operator(cl);
+					else if (mode == "-o" && chan.is_operator(cl))
+						chan.remove_operator(cl);
 				}
 			}
 			else if (mode == "+l")
 			{
-				it->set_limit(std::stoi(parameter));
-				it->set_lim_state(true);
+				chan.set_limit(std::stoi(parameter));
+				chan.set_lim_state(true);
 			}
 			else if (mode == "-l")
 			{
-				it->set_limit(MAX_CLIENTS);
-				it->set_lim_state(false);
+				chan.set_limit(MAX_CLIENTS);
+				chan.set_lim_state(false);
 			}
 
 			else if (mode == "+i")
-				it->set_invite_only(true);
+				chan.set_invite_only(true);
 			else if (mode == "-i")
-				it->set_invite_only(false);
+				chan.set_invite_only(false);
 			else
 			{
 				msg = ERR_UNKNOWNMODE(client.get_nickname(), mode);
 				send(client.getSocket(), msg.c_str(), msg.length(), 0);
 				return;
 			}
-			msg = RPL_MODESET(client.get_nickname(), it->get_name(), mode, parameter);
-			it->broadcast_message(client, msg, 0);
+			msg = RPL_MODESET(client.get_nickname(), chan.get_name(), mode, parameter);
+			chan.broadcast_message(client, msg, 0);
 		}
-		else if (!it->in_channel(client))
+		else if (!chan.in_channel(client))
 		{
-			msg = ERR_NOTONCHANNEL(client.get_nickname(), it->get_name());
+			msg = ERR_NOTONCHANNEL(client.get_nickname(), chan.get_name());
 			send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		}
 		else
 		{
-			msg = ERR_CHANOPRIVSNEEDED(server_name, client.get_nickname(), it->get_name());
+			msg = ERR_CHANOPRIVSNEEDED(server_name, client.get_nickname(), chan.get_name());
 			send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		}
 	}

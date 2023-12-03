@@ -195,19 +195,16 @@ void Channel::add_invited(Client &client)
 void Channel::remove_client_from_channel(Client &client)
 {
     std::vector<Client>::iterator it = _users.begin();
-    if (it!=_users.end())
-    {
         for(;it!=_users.end();it++)
         {
             if (it->get_nickname()==client.get_nickname())
             {
-                _users.erase(it);
                 if (is_operator(client))
-                    _operators.erase(it);
+                    remove_operator(client);
+                _users.erase(it);
                 break;
             }
         }
-    }
 }
 
 bool Channel::get_topic_state()
