@@ -72,7 +72,7 @@ Client &Server::find_client(std::string nick)
 			}
 		}
 	}
-	client_note_found.set_nickName("NOT_FOUND");
+	client_note_found.set_nickName("NOT__FOUND");
 	return client_note_found;
 }
 void Server::run()
@@ -160,9 +160,16 @@ void Server::nick(std::string nick, Client &client)
 		}
 		else if (nick_already_exist(nick) == false)
 		{
-			message = ": nickname " + client.get_nickname() + " change to  " + nick + "\r\n";
+			message = ":" + client.get_nickname() + "!user@localhost"+" NICK :" + nick + "\r\n";;
 			client.set_nickName(nick);
-			send(client.getSocket(), message.c_str(), message.length(), 0);
+			std::vector<std::string>::iterator it =  client.get_channels().begin();
+			for (; it != client.get_channels().end(); it++)
+			{
+				Channel & chan = find_channel(*it);
+				chan.broadcast_message(client, message, 0);
+			}
+			
+			// send(client.getSocket(), message.c_str(), message.length(), 0);
 		}
 		else
 		{

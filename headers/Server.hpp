@@ -40,13 +40,11 @@ public:
     void run();
     void cleanServer();
     void clearChannels(Client & client);
-    bool isOnServer(Client &client);
     std::string filterString(const std::string &str);
     void pass(std::string password, Client &client);
     bool nick_already_exist(std::string nick);
     bool isValidNick(const std::string& nick);
-    int isMultipleWords(std::string str, char c);
-    bool is_onServer(Client &client);
+    int isMultipleWords(std::string str, char c);   
     void handleMulti(Client &client);
     void nick(std::string nick , Client &client);
     void user(std::string nick, std::string mode, std::string hostName, std::string realName , Client &client);
@@ -55,6 +53,7 @@ public:
     void join(Client &client, std::string target, std::string &password);
     void handle_mode(Client &client, std::string &command);
     void handle_bote(Client &client);
+    // void handle_file_transfer(Client &client);
     void invite(Client &client, std::string nickname, std::string channel);
     void kick(Client &client, std::string channel, std::string user, std::string message);
     void topic(Client &client,std::string channel, std::string topic);

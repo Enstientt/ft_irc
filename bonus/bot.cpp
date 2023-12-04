@@ -10,6 +10,7 @@
 #include <ctime> 
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <fstream>
 
 void handleQuotes(int socket)
 {
@@ -86,6 +87,7 @@ void handleQuotes(int socket)
     std::srand(std::time(0));
     int random = std::rand() % 68;
     std::string to_send(quotes[random]);
+    to_send = ": " + to_send ;
     to_send +="\r\n";
     send(socket, to_send.c_str(), to_send.length(), 0);
 }
@@ -164,7 +166,7 @@ int main(int argc, char** argv)
     }
     else
     {
-        std::cerr << "Usage: " << argv[0] << " <IP> <PORT>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <IP> <PORT> <SERVER PASSWORD>" << std::endl;
     }
 
     return 0;
