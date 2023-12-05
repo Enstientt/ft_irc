@@ -67,6 +67,8 @@
         "numeric": "cpp",
         "random": "cpp",
         "fstream": "cpp",
-        "__memory": "cpp"
+        "__memory": "cpp",
+        "iomanip": "cpp",
+        "stack": "cpp"
     }
 }

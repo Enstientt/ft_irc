@@ -10,7 +10,6 @@ void signal_handler(int signal)
 int main(int arc, char** argv)
 {
     signal(SIGINT, signal_handler);
-    // Create an instance of the Server class
     if (arc == 3)
     {
         std::string port = argv[1];
@@ -22,7 +21,6 @@ int main(int arc, char** argv)
             return (1);
         }
         Server ircServer(port, password);
-        // Run the server
         ircServer.run();
     }
 

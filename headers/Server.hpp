@@ -14,7 +14,7 @@
 #include "Channel.hpp"
 #include <algorithm>
 
-#define MAX_CLIENTS 10
+#define MAX_CLIENTS 100
 
 class Channel;
 class Server {
@@ -53,7 +53,6 @@ public:
     void join(Client &client, std::string target, std::string &password);
     void handle_mode(Client &client, std::string &command);
     void handle_bote(Client &client);
-    // void handle_file_transfer(Client &client);
     void invite(Client &client, std::string nickname, std::string channel);
     void kick(Client &client, std::string channel, std::string user, std::string message);
     void topic(Client &client,std::string channel, std::string topic);

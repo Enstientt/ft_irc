@@ -3,7 +3,7 @@
 #include "Client.hpp"
 #include <algorithm>
 
-#define MAX_CLIENTS 10
+#define MAX_CLIENTS 100
 
 
 class Channel{

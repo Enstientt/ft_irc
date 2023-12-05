@@ -7,6 +7,10 @@ Server::Server()
 
 Server::Server(std::string port, std::string password) : port(port), password(password)
 {
+	//initialize client and channel const 
+	server_name = "Irc-Server";
+	client_note_found.set_nickName("NOT__FOUND");
+	channel_note_found.set_name("NOT_FOUND");
 	// Create a socket
 	serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (serverSocket == -1)
@@ -72,7 +76,6 @@ Client &Server::find_client(std::string nick)
 			}
 		}
 	}
-	client_note_found.set_nickName("NOT__FOUND");
 	return client_note_found;
 }
 void Server::run()
@@ -631,7 +634,6 @@ Channel &Server::find_channel(std::string channel)
 			}
 		}
 	}
-	channel_note_found.set_name("NOT_FOUND");
 	return channel_note_found;
 }
 void Server::invite(Client &client, std::string nickname, std::string channel)
@@ -880,14 +882,3 @@ void Server::clearChannels(Client &client)
 			it->remove_client_from_channel(client);
 	}
 }
-
-// bool Server::isOnServer(Client &client){
-// 	std::vector<Client>::iterator it = _clients.begin();
-// 	for (;it !=_clients.end();it++)
-// 	{
-// 		if (it->get_nickname() == client.get_nickname()){
-// 			return true;
-// 		}
-// 	}
-// 	return false;
-// }
