@@ -20,12 +20,19 @@ private:
     std::string hostName;
     std::string userName;
     bool is_authenticate;
+    bool is_registered;
     std::vector<std::string> _channels;
     std::string pwd;
 public:
     Client();
     Client(int socket, const sockaddr_in& address);
     int getSocket() const;
+    bool get_reg() const;
+    void set_reg(bool reg);
+    void set_username(std::string username);
+    std::string get_realname() const;
+    std::string get_username() const;
+    void set_realname(std::string realName);
     const sockaddr_in& getAddress() const;
     void setMessage(std::string message);
     const std::string getMessage();
@@ -34,7 +41,7 @@ public:
     int getSocket();
     void set_nickName(std::string nick);
     std::string get_nickname();
-    void set_user(std::string userName, std::string hostName, std::string realName);
+    void set_user(std::string userName,std::string realName);
     std::string get_user();
     std::string get_pwd();
     void set_pwd(std::string pwd);

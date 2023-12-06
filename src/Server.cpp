@@ -1,5 +1,14 @@
 #include "../headers/Server.hpp"
 
+static bool checkForma(const std::string &username, std::string &mode, std::string hostName, std::string realName)
+{
+	if (username.empty() || mode.empty() || hostName.empty() || realName.empty() )
+		return false;
+	if ( mode != "0" || hostName != "*")
+		return false;
+	return true;
+}
+
 Server::Server()
 {
 	server_name = "Irc-Server";
@@ -7,7 +16,7 @@ Server::Server()
 
 Server::Server(std::string port, std::string password) : port(port), password(password)
 {
-	//initialize client and channel const 
+	//initialize client and channel con 
 	server_name = "Irc-Server";
 	client_note_found.set_nickName("NOT__FOUND");
 	channel_note_found.set_name("NOT_FOUND");
@@ -136,6 +145,12 @@ void Server::nick(std::string nick, Client &client)
 {
 	std::string message;
 	// if not authenticate just processd with authentication
+	if (nick.empty())
+	{
+		message = ERR_NONICKNAMEGIVEN;
+		send(client.getSocket(), message.c_str(), message.length(), 0);
+		return;
+	}
 	if (!client.get_pwd().empty() && client.auth() == false)
 	{
 		if (!isValidNick(nick))
@@ -171,8 +186,6 @@ void Server::nick(std::string nick, Client &client)
 				Channel & chan = find_channel(*it);
 				chan.broadcast_message(client, message, 0);
 			}
-			
-			// send(client.getSocket(), message.c_str(), message.length(), 0);
 		}
 		else
 		{
@@ -180,23 +193,30 @@ void Server::nick(std::string nick, Client &client)
 			send(client.getSocket(), message.c_str(), message.length(), 0);
 		}
 	}
+	if (!client.get_pwd().empty() && !client.get_username().empty() && !client.get_nickname().empty() && client.auth() == false)
+		welcomeClient(client);
 }
 void Server::user(std::string username, std::string mode, std::string hostName, std::string realName, Client &client)
 {
 	(void)mode;
-	if (!client.get_pwd().empty() && !client.get_nickname().empty() && client.auth() == false)
+	if (!checkForma(username, mode,  hostName,realName)) {
+    std::string errorMessage = "461 " + username + " :Not enough parameters\r\n";
+	send(client.getSocket(), errorMessage.c_str(), errorMessage.length(), 0);
+	return;
+    // send errorMessage to the user
+}
+	if (!client.get_pwd().empty() && client.auth() == false)
 	{
-		std::string client_add = inet_ntoa(client.getAddress().sin_addr);
-		std::string welcomeMessage = ": 001 " + client.get_nickname() + " :Welcome " + client.get_nickname() + " to the Internet Relay Chat " + user_forma(client.get_nickname(), realName, client_add) + "\r\n";
-		client.set_user(username, hostName, realName);
-		client.setAuth(true);
-		send(client.getSocket(), welcomeMessage.c_str(), welcomeMessage.length(), 0);
+		client.set_username(username);
+		client.set_realname(realName);
 	}
 	else if (client.auth())
 	{
 		std::string message = ERR_ALREADYREGISTRED(server_name, client.get_nickname());
 		send(client.getSocket(), message.c_str(), message.length(), 0);
 	}
+	if (!client.get_pwd().empty() && !client.get_username().empty() && !client.get_nickname().empty() && client.auth() == false)
+		welcomeClient(client);
 }
 void Server::privmsg(Client &client, std::string command)
 {
@@ -254,11 +274,6 @@ void Server::handle_mode(Client &client, std::string &command)
 	iss >> cmd >> name >> mode;
 	getline(iss, parameter);
 	Channel & chan = find_channel(name);
-	// for (; it != _channels.end(); ++it)
-	// {
-	// 	if (it->get_name() == name)
-	// 		break;
-	// }
 	if (chan.get_name() != channel_note_found.get_name())
 	{
 		if (chan.in_channel(client) && chan.is_operator(client))
@@ -283,6 +298,7 @@ void Server::handle_mode(Client &client, std::string &command)
 			else if (mode == "+o" || mode == "-o")
 			{
 				!parameter.empty() ? parameter = parameter.substr(1) : "";
+				
 				Client &cl = find_client(parameter);
 				if (cl.get_nickname() == "NOT_FOUND")
 				{
@@ -306,6 +322,12 @@ void Server::handle_mode(Client &client, std::string &command)
 			}
 			else if (mode == "+l")
 			{
+				if (parameter.empty())
+				{
+					msg = ERR_NEEDMOREPARAMS(client.get_nickname(), "MODE");
+					send(client.getSocket(), msg.c_str(), msg.length(), 0);
+					return;
+				}
 				chan.set_limit(std::stoi(parameter));
 				chan.set_lim_state(true);
 			}
@@ -422,8 +444,6 @@ void Server::execute_command(Client &client)
 		}
 		else if (cmd == "BOTE")
 			handle_bote(client);
-		// else if (cmd == "QUIT")
-		// 	clearChannels(client);
 		else if (!stringExistsInArray(cmd, array, 11))
 		{
 			std::string msg;
@@ -881,4 +901,12 @@ void Server::clearChannels(Client &client)
 		if(it->in_channel(client))
 			it->remove_client_from_channel(client);
 	}
+}
+
+void Server::welcomeClient(Client &client)
+{
+	std::string client_add = inet_ntoa(client.getAddress().sin_addr);
+	std::string welcomeMessage = ": 001 " + client.get_nickname() + " :Welcome " + client.get_nickname() + " to the Internet Relay Chat " + user_forma(client.get_nickname(), client.get_user(), client_add) + "\r\n";
+	client.setAuth(true);
+	send(client.getSocket(), welcomeMessage.c_str(), welcomeMessage.length(), 0);
 }

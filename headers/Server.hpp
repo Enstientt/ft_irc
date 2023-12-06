@@ -45,6 +45,7 @@ public:
     bool nick_already_exist(std::string nick);
     bool isValidNick(const std::string& nick);
     int isMultipleWords(std::string str, char c);   
+    void welcomeClient(Client & client);
     void handleMulti(Client &client);
     void nick(std::string nick , Client &client);
     void user(std::string nick, std::string mode, std::string hostName, std::string realName , Client &client);

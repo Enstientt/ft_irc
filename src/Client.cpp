@@ -49,11 +49,26 @@ std::string Client::get_nickname()
 {
     return this->nickName;
 }
-void Client::set_user(std::string username, std::string hostName, std::string realName)
+void Client::set_reg(bool reg){
+    this->is_registered = reg;
+}
+bool Client::get_reg() const{
+    return this->is_registered;
+}
+void Client::set_username(std::string username)
+{
+    this->userName = username;
+}
+void Client::set_realname(std::string realName)
 {
     this->realname = realName;
-    this->userName = username;
-    this->hostName = hostName;
+}
+
+std::string Client::get_realname() const{
+    return this->realname;
+}
+std::string Client::get_username() const{
+    return this->userName;
 }
 std::string Client::get_user()
 {
