@@ -1,19 +1,10 @@
 #include "../headers/Server.hpp"
 
-static bool checkForma(const std::string &username, std::string &mode, std::string hostName, std::string realName)
-{
-	if (username.empty() || mode.empty() || hostName.empty() || realName.empty() )
-		return false;
-	if ( mode != "0" || hostName != "*")
-		return false;
-	return true;
-}
-
+/****************************** server set UP *******************************************/
 Server::Server()
 {
 	server_name = "Irc-Server";
 }
-
 Server::Server(std::string port, std::string password) : port(port), password(password)
 {
 	//initialize client and channel con 
@@ -72,21 +63,6 @@ Server::~Server()
 {
 	close(serverSocket);
 }
-Client &Server::find_client(std::string nick)
-{
-	std::vector<Client>::iterator it = _clients.begin();
-	if (it != _clients.end())
-	{
-		for (; it != _clients.end(); it++)
-		{
-			if (nick == it->get_nickname())
-			{
-				return *it;
-			}
-		}
-	}
-	return client_note_found;
-}
 void Server::run()
 {
 	std::cout << "Server listening on port " << port << "..." << std::endl;
@@ -110,356 +86,10 @@ void Server::run()
 		for (int i = 1; i < MAX_CLIENTS + 1; ++i)
 		{
 			if (fds[i].revents & (POLLIN | POLLHUP | POLLERR))
-			{
 				handleClient(i);
-			}
 		}
 	}
 };
-void Server::pass(std::string password, Client &client)
-{
-	if (client.auth() == false)
-	{
-		if (password.empty())
-		{
-			send(client.getSocket(), ERR_NEEDMOREPARAMS(client.get_nickname(), "PASS").c_str(), ERR_NEEDMOREPARAMS(client.get_nickname(), "PASS").length(), 0);
-		}
-		else if (password != this->password)
-		{
-
-			send(client.getSocket(), ERR_PASSWDMISMATCH(client.get_nickname()).c_str(), ERR_PASSWDMISMATCH(client.get_nickname()).length(), 0);
-		}
-		else
-		{
-			client.set_pwd(password);
-		}
-	}
-	else
-	{
-		std::string message = ERR_ALREADYREGISTRED(server_name, client.get_nickname());
-		send(client.getSocket(), message.c_str(), message.length(), 0);
-	}
-};
-
-void Server::nick(std::string nick, Client &client)
-{
-	std::string message;
-	// if not authenticate just processd with authentication
-	if (nick.empty())
-	{
-		message = ERR_NONICKNAMEGIVEN;
-		send(client.getSocket(), message.c_str(), message.length(), 0);
-		return;
-	}
-	if (!client.get_pwd().empty() && client.auth() == false)
-	{
-		if (!isValidNick(nick))
-		{
-			message = server_name + "432 " + nick + " :Erroneous Nickname\r\n";
-			send(client.getSocket(), message.c_str(), message.length(), 0);
-		}
-		else if (nick_already_exist(nick) == false)
-		{
-			client.set_nickName(nick);
-		}
-		else
-		{
-			message = ": 433 " + nick + " :Nickname is already in use.\r\n";
-			send(client.getSocket(), message.c_str(), message.length(), 0);
-		}
-	}
-	// changing the nickname
-	else if (client.auth() == true)
-	{
-		if (!isValidNick(nick))
-		{
-			message = server_name + "432 " + client.get_nickname() + nick + " :Erroneous Nickname\r\n";
-			send(client.getSocket(), message.c_str(), message.length(), 0);
-		}
-		else if (nick_already_exist(nick) == false)
-		{
-			message = ":" + client.get_nickname() + "!user@localhost"+" NICK :" + nick + "\r\n";;
-			client.set_nickName(nick);
-			std::vector<std::string>::iterator it =  client.get_channels().begin();
-			for (; it != client.get_channels().end(); it++)
-			{
-				Channel & chan = find_channel(*it);
-				chan.broadcast_message(client, message, 0);
-			}
-		}
-		else
-		{
-			message = ": 433 " + nick + " :Nickname is already in use.\r\n";
-			send(client.getSocket(), message.c_str(), message.length(), 0);
-		}
-	}
-	if (!client.get_pwd().empty() && !client.get_username().empty() && !client.get_nickname().empty() && client.auth() == false)
-		welcomeClient(client);
-}
-void Server::user(std::string username, std::string mode, std::string hostName, std::string realName, Client &client)
-{
-	(void)mode;
-	if (!checkForma(username, mode,  hostName,realName)) {
-    std::string errorMessage = "461 " + username + " :Not enough parameters\r\n";
-	send(client.getSocket(), errorMessage.c_str(), errorMessage.length(), 0);
-	return;
-    // send errorMessage to the user
-}
-	if (!client.get_pwd().empty() && client.auth() == false)
-	{
-		client.set_username(username);
-		client.set_realname(realName);
-	}
-	else if (client.auth())
-	{
-		std::string message = ERR_ALREADYREGISTRED(server_name, client.get_nickname());
-		send(client.getSocket(), message.c_str(), message.length(), 0);
-	}
-	if (!client.get_pwd().empty() && !client.get_username().empty() && !client.get_nickname().empty() && client.auth() == false)
-		welcomeClient(client);
-}
-void Server::privmsg(Client &client, std::string command)
-{
-	std::istringstream iss(command);
-	std::string cmd, target, msg;
-	std::string message;
-	iss >> cmd >> target >> std::ws;
-	std::getline(iss, msg);
-	if (target.empty() || msg.empty())
-	{
-		message = ERR_NEEDMOREPARAMS(client.get_nickname(), cmd);
-		send(client.getSocket(), message.c_str(), message.length(), 0);
-	}
-	// handle channel
-	else if (target[0] == '#')
-	{
-		Channel & chan = find_channel(target);
-		if (chan.get_name() == channel_note_found.get_name())
-		{
-			message = ERR_NOSUCHCHANNEL(client.get_nickname(), target);
-			send(client.getSocket(), message.c_str(), message.length(), 0);
-		}
-		else if (chan.in_channel(client))
-		{
-			message = RPL_PRIVMSG(client.get_nickname(), client.get_user(), chan.get_name(), msg);
-			chan.broadcast_message(client, message, 1);
-		}
-		else
-		{
-			message = ERR_NOTONCHANNEL(client.get_nickname(), target);
-			send(client.getSocket(), message.c_str(), message.length(), 0);
-		}
-	}
-	// handle users
-	else
-	{
-		Client &cl = find_client(target);
-		if (cl.get_nickname() != client_note_found.get_nickname())
-		{
-			message = RPL_PRIVMSG(client.get_nickname(), cl.get_user(), target, msg);
-			send(cl.getSocket(), message.c_str(), message.length(), 0);
-		}
-		else
-		{
-			message = ERR_NOSUCHNICK(client.get_nickname(), target);
-			send(client.getSocket(), message.c_str(), message.length(), 0);
-		}
-	}
-};
-
-void Server::handle_mode(Client &client, std::string &command)
-{
-	std::istringstream iss(command);
-	std::string msg, cmd, name, mode, parameter;
-	iss >> cmd >> name >> mode;
-	getline(iss, parameter);
-	Channel & chan = find_channel(name);
-	if (chan.get_name() != channel_note_found.get_name())
-	{
-		if (chan.in_channel(client) && chan.is_operator(client))
-		{
-			if (mode == "+k")
-			{
-				chan.set_pass(parameter.substr(1));
-				chan.set_rest(true);
-			}
-			else if (mode == "-k")
-				chan.set_rest(false);
-			else if (mode == "+t")
-			{
-				parameter = "";
-				chan.set_topic_protected(true);
-			}
-			else if (mode == "-t")
-			{
-				parameter = "";
-				chan.set_topic_protected(false);
-			}
-			else if (mode == "+o" || mode == "-o")
-			{
-				!parameter.empty() ? parameter = parameter.substr(1) : "";
-				
-				Client &cl = find_client(parameter);
-				if (cl.get_nickname() == "NOT_FOUND")
-				{
-					msg = ERR_NOSUCHNICK(client.get_nickname(), parameter);
-					send(client.getSocket(), msg.c_str(), msg.length(), 0);
-					return;
-				}
-				else if (!chan.in_channel(cl))
-				{
-					msg = ERR_USERNOTINCHANNEL(server_name, client.get_nickname(), parameter, name);
-					send(client.getSocket(), msg.c_str(), msg.length(), 0);
-					return;
-				}
-				else
-				{
-					if (mode == "+o" && !chan.is_operator(cl))
-						chan.add_operator(cl);
-					else if (mode == "-o" && chan.is_operator(cl))
-						chan.remove_operator(cl);
-				}
-			}
-			else if (mode == "+l")
-			{
-				if (parameter.empty())
-				{
-					msg = ERR_NEEDMOREPARAMS(client.get_nickname(), "MODE");
-					send(client.getSocket(), msg.c_str(), msg.length(), 0);
-					return;
-				}
-				chan.set_limit(std::stoi(parameter));
-				chan.set_lim_state(true);
-			}
-			else if (mode == "-l")
-			{
-				chan.set_limit(MAX_CLIENTS);
-				chan.set_lim_state(false);
-			}
-
-			else if (mode == "+i")
-				chan.set_invite_only(true);
-			else if (mode == "-i")
-				chan.set_invite_only(false);
-			else
-			{
-				msg = ERR_UNKNOWNMODE(client.get_nickname(), mode);
-				send(client.getSocket(), msg.c_str(), msg.length(), 0);
-				return;
-			}
-			msg = RPL_MODESET(client.get_nickname(), chan.get_name(), mode, parameter);
-			chan.broadcast_message(client, msg, 0);
-		}
-		else if (!chan.in_channel(client))
-		{
-			msg = ERR_NOTONCHANNEL(client.get_nickname(), chan.get_name());
-			send(client.getSocket(), msg.c_str(), msg.length(), 0);
-		}
-		else
-		{
-			msg = ERR_CHANOPRIVSNEEDED(server_name, client.get_nickname(), chan.get_name());
-			send(client.getSocket(), msg.c_str(), msg.length(), 0);
-		}
-	}
-	else
-	{
-		msg = ERR_NOSUCHCHANNEL(client.get_nickname(), name);
-		send(client.getSocket(), msg.c_str(), msg.length(), 0);
-	}
-}
-bool stringExistsInArray(std::string target, std::string array[], int arraySize)
-{
-	for (int i = 0; i < arraySize; i++)
-	{
-		if (array[i] == target)
-		{
-			return true;
-		}
-	}
-	return false;
-}
-void Server::execute_command(Client &client)
-{
-
-	std::string command = client.getMessage();
-	std::string cmd;
-	std::string value;
-	command = filterString(command);
-	std::string array[] = {"PASS", "NICK", "USER", "PRIVMSG", "JOIN", "MODE", "INVITE", "KICK", "TOPIC", "BOTE", "QUIT"};
-	std::istringstream iss(command);
-	iss >> cmd >> value;
-	if (cmd == "PASS")
-	{
-		pass(value, client);
-		return;
-	}
-	else if (cmd == "NICK")
-	{
-		nick(value, client);
-		return;
-	}
-	else if (cmd == "USER")
-	{
-		std::string mode;
-		std::string hostName;
-		std::string realName;
-		iss >> mode >> hostName >> realName;
-		user(value, mode, hostName, realName, client);
-		return;
-	}
-	if (client.auth())
-	{
-
-		if (cmd == "PRIVMSG")
-			privmsg(client, command);
-		else if (cmd == "JOIN")
-		{
-
-			std::string pass;
-			getline(iss, pass);
-			if (!pass.empty())
-				isMultipleWords(pass, ' ') ? pass = pass.substr(2) : pass = pass.substr(1);
-			join(client, value, pass);
-		}
-		else if (cmd == "MODE")
-			handle_mode(client, command);
-		else if (cmd == "INVITE")
-		{
-			std::string channel;
-			iss >> channel;
-			invite(client, value, channel);
-		}
-		else if (cmd == "KICK")
-		{
-			std::string nickname, message;
-			iss >> nickname;
-			getline(iss, message);
-			kick(client, value, nickname, message);
-		}
-		else if (cmd == "TOPIC")
-		{
-			std::string top;
-			getline(iss, top);
-			topic(client, value, top);
-		}
-		else if (cmd == "BOTE")
-			handle_bote(client);
-		else if (!stringExistsInArray(cmd, array, 11))
-		{
-			std::string msg;
-			msg = ERR_WRONG_COMMAND(server_name, client.get_nickname(), cmd);
-			send(client.getSocket(), msg.c_str(), msg.length(), 0);
-		}
-	}
-	else
-	{
-		// need to authenticate;
-		std::string msg;
-		msg = ERR_NOTAUTHENTICATED(server_name, client.get_nickname());
-		send(client.getSocket(), msg.c_str(), msg.length(), 0);
-	}
-}
-
 void Server::acceptConnection()
 {
 	sockaddr_in client_add;
@@ -547,65 +177,308 @@ void Server::handleClient(int index)
 		fds[index].fd = -1;
 	}
 	cleanServer();
-	// else
-	//     perror("recv");
+}
+/****************************** commands *******************************************/
+void Server::pass(std::string password, Client &client)
+{
+	if (client.auth() == false)
+	{
+		if (password.empty())
+		{
+			send(client.getSocket(), ERR_NEEDMOREPARAMS(client.get_nickname(), "PASS").c_str(), ERR_NEEDMOREPARAMS(client.get_nickname(), "PASS").length(), 0);
+		}
+		else if (password != this->password)
+		{
+
+			send(client.getSocket(), ERR_PASSWDMISMATCH(client.get_nickname()).c_str(), ERR_PASSWDMISMATCH(client.get_nickname()).length(), 0);
+		}
+		else
+		{
+			client.set_pwd(password);
+		}
+	}
+	else
+	{
+		std::string message = ERR_ALREADYREGISTRED(server_name, client.get_nickname());
+		send(client.getSocket(), message.c_str(), message.length(), 0);
+	}
+};
+
+void Server::nick(std::string nick, Client &client)
+{
+	std::string message;
+	// if not authenticate just processd with authentication
+	if (nick.empty())
+	{
+		message = ERR_NONICKNAMEGIVEN;
+		send(client.getSocket(), message.c_str(), message.length(), 0);
+		return;
+	}
+	if (!client.get_pwd().empty() && client.auth() == false)
+	{
+		if (!isValidNick(nick))
+		{
+			message = server_name + "432 " + nick + " :Erroneous Nickname\r\n";
+			send(client.getSocket(), message.c_str(), message.length(), 0);
+		}
+		else if (nick_already_exist(nick) == false)
+		{
+			client.set_nickName(nick);
+		}
+		else
+		{
+			message = ": 433 " + nick + " :Nickname is already in use.\r\n";
+			send(client.getSocket(), message.c_str(), message.length(), 0);
+		}
+	}
+	// changing the nickname
+	else if (client.auth() == true)
+	{
+		if (!isValidNick(nick))
+		{
+			message = server_name + "432 " + client.get_nickname() + nick + " :Erroneous Nickname\r\n";
+			send(client.getSocket(), message.c_str(), message.length(), 0);
+		}
+		else if (nick_already_exist(nick) == false)
+		{
+			message = ":" + client.get_nickname() + "!user@localhost"+" NICK :" + nick + "\r\n";;
+			client.set_nickName(nick);
+			std::vector<std::string>::iterator it =  client.get_channels().begin();
+			for (; it != client.get_channels().end(); it++)
+			{
+				Channel & chan = find_channel(*it);
+				chan.broadcast_message(client, message, 0);
+			}
+		}
+		else
+		{
+			message = ": 433 " + nick + " :Nickname is already in use.\r\n";
+			send(client.getSocket(), message.c_str(), message.length(), 0);
+		}
+	}
+	if (!client.get_pwd().empty() && !client.get_username().empty() && !client.get_nickname().empty() && client.auth() == false)
+		welcomeClient(client);
+}
+void Server::user(std::string username, std::string mode, std::string hostName, std::string realName, Client &client)
+{
+	(void)mode;
+	if (!checkForma(username, mode, hostName,realName)) {
+    std::string errorMessage = "461 " + username + " :Not enough parameters\r\n";
+	send(client.getSocket(), errorMessage.c_str(), errorMessage.length(), 0);
+	return;
+}
+	if (!client.get_pwd().empty() && client.auth() == false)
+	{
+		client.set_username(username);
+		client.set_realname(realName);
+	}
+	else if (client.auth())
+	{
+		std::string message = ERR_ALREADYREGISTRED(server_name, client.get_nickname());
+		send(client.getSocket(), message.c_str(), message.length(), 0);
+		return;
+	}
+	if (!client.get_pwd().empty() && !client.get_username().empty() && !client.get_nickname().empty() && client.auth() == false)
+		welcomeClient(client);
+}
+void Server::privmsg(Client &client, std::string command)
+{
+	std::istringstream iss(command);
+	std::string cmd, target, msg;
+	std::string message;
+	iss >> cmd >> target >> std::ws;
+	std::getline(iss, msg);
+	if (target.empty() || msg.empty())
+	{
+		message = ERR_NEEDMOREPARAMS(client.get_nickname(), cmd);
+		send(client.getSocket(), message.c_str(), message.length(), 0);
+	}
+	// handle channel
+	else if (target[0] == '#')
+	{
+		Channel & chan = find_channel(target);
+		if (chan.get_name() == channel_note_found.get_name())
+		{
+			message = ERR_NOSUCHCHANNEL(client.get_nickname(), target);
+			send(client.getSocket(), message.c_str(), message.length(), 0);
+		}
+		else if (chan.in_channel(client))
+		{
+			message = RPL_PRIVMSG(client.get_nickname(), client.get_username(), chan.get_name(), msg);
+			chan.broadcast_message(client, message, 1);
+		}
+		else
+		{
+			message = ERR_NOTONCHANNEL(client.get_nickname(), target);
+			send(client.getSocket(), message.c_str(), message.length(), 0);
+		}
+	}
+	// handle users
+	else
+	{
+		Client &cl = find_client(target);
+		if (cl.get_nickname() != client_note_found.get_nickname())
+		{
+			message = RPL_PRIVMSG(client.get_nickname(), cl.get_username(), target, msg);
+			send(cl.getSocket(), message.c_str(), message.length(), 0);
+		}
+		else
+		{
+			message = ERR_NOSUCHNICK(client.get_nickname(), target);
+			send(client.getSocket(), message.c_str(), message.length(), 0);
+		}
+	}
+};
+
+void Server::handle_mode(Client &client, std::string &command)
+{
+	std::istringstream iss(command);
+	std::string msg, cmd, name, mode, parameter;
+	iss >> cmd >> name >> mode>>std::ws;
+	getline(iss, parameter);
+	Channel & chan = find_channel(name);
+	if (chan.get_name() != channel_note_found.get_name())
+	{
+		if (chan.in_channel(client) && chan.is_operator(client))
+		{
+			if (mode == "+k")
+			{
+				chan.set_pass(parameter);
+				chan.set_rest(true);
+			}
+			else if (mode == "-k")
+				chan.set_rest(false);
+			else if (mode == "+t")
+			{
+				parameter = "";
+				chan.set_topic_protected(true);
+			}
+			else if (mode == "-t")
+			{
+				parameter = "";
+				chan.set_topic_protected(false);
+			}
+			else if (mode == "+o" || mode == "-o")
+			{	
+				Client &cl = find_client(parameter);
+				if (cl.get_nickname() == "NOT__FOUND")
+				{
+					msg = ERR_NOSUCHNICK(client.get_nickname(), parameter);
+					send(client.getSocket(), msg.c_str(), msg.length(), 0);
+					return;
+				}
+				else if (!chan.in_channel(cl))
+				{
+					msg = ERR_USERNOTINCHANNEL(server_name, client.get_nickname(), parameter, name);
+					send(client.getSocket(), msg.c_str(), msg.length(), 0);
+					return;
+				}
+				else
+				{
+					if (mode == "+o" && !chan.is_operator(cl))
+						chan.add_operator(cl);
+					else if (mode == "-o" && chan.is_operator(cl))
+						chan.remove_operator(cl);
+				}
+			}
+			else if (mode == "+l")
+			{
+				if (parameter.empty())
+				{
+					msg = ERR_NEEDMOREPARAMS(client.get_nickname(), "MODE");
+					send(client.getSocket(), msg.c_str(), msg.length(), 0);
+					return;
+				}
+				// chan.set_limit(std::stoi(parameter));
+				chan.set_lim_state(true);
+			}
+			else if (mode == "-l")
+			{
+				chan.set_limit(MAX_CLIENTS);
+				chan.set_lim_state(false);
+			}
+
+			else if (mode == "+i")
+				chan.set_invite_only(true);
+			else if (mode == "-i")
+				chan.set_invite_only(false);
+			else
+			{
+				msg = ERR_UNKNOWNMODE(client.get_nickname(), mode);
+				send(client.getSocket(), msg.c_str(), msg.length(), 0);
+				return;
+			}
+			msg = RPL_MODESET(client.get_nickname(), chan.get_name(), mode, parameter);
+			chan.broadcast_message(client, msg, 0);
+		}
+		else if (!chan.in_channel(client))
+		{
+			msg = ERR_NOTONCHANNEL(client.get_nickname(), chan.get_name());
+			send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		}
+		else
+		{
+			msg = ERR_CHANOPRIVSNEEDED(server_name, client.get_nickname(), chan.get_name());
+			send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		}
+	}
+	else
+	{
+		msg = ERR_NOSUCHCHANNEL(client.get_nickname(), name);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+	}
 }
 
 void Server::join(Client &client, std::string target, std::string &pass)
 {
-	std::vector<Channel>::iterator it = _channels.begin();
 	std::string msg;
 	int toggler = 0;
 
-	for (; it != _channels.end(); it++)
-	{
-		if (it->get_name() == target)
-			break;
-	}
+	Channel &chan = find_channel(target);
 	// check if the channel exist
-	if (it != _channels.end())
+	if (chan.get_name() != channel_note_found.get_name())
 	{
-		std::string ps = it->get_pass();
-		if (it->in_channel(client))
+		std::string ps = chan.get_pass();
+		if (chan.in_channel(client))
 		{
-			msg = ERR_USERONCHANNEL(client.get_nickname(), client.get_nickname(), it->get_name());
+			msg = ERR_USERONCHANNEL(client.get_nickname(), client.get_nickname(), chan.get_name());
 			send(client.getSocket(), msg.c_str(), msg.length(), 0);
 			return;
 		}
-		if (it->is_invite_only())
+		if (chan.is_invite_only())
 		{
-			if (!it->is_invited(client))
+			if (!chan.is_invited(client))
 			{
-				msg = ERR_INVITEONLYCHAN(client.get_nickname(), it->get_name());
+				msg = ERR_INVITEONLYCHAN(client.get_nickname(), chan.get_name());
 				send(client.getSocket(), msg.c_str(), msg.length(), 0);
 				toggler = 1;
 			}
 		}
-		if (it->get_lim_state())
+		if (chan.get_lim_state())
 		{
-			if (it->is_full())
+			if (chan.is_full())
 			{
-				msg = ERR_CHANNELISFULL(client.get_nickname(), it->get_name());
+				msg = ERR_CHANNELISFULL(client.get_nickname(), chan.get_name());
 				send(client.getSocket(), msg.c_str(), msg.length(), 0);
 				toggler = 1;
 			}
 		}
-		if (it->get_rest())
+		if (chan.get_rest())
 		{
 			if (pass != ps)
 			{
-				msg = ERR_BADCHANNELKEY(client.get_nickname(), it->get_name());
+				msg = ERR_BADCHANNELKEY(client.get_nickname(), chan.get_name());
 				send(client.getSocket(), msg.c_str(), msg.length(), 0);
 				toggler = 1;
 			}
 		}
 		if (toggler == 0)
 		{
-			it->add_client_to_channnel(client);
-			client.set_channels(it->get_name());
-			msg = RPL_JOIN(user_forma(client.get_nickname(), client.get_user(), inet_ntoa(client.getAddress().sin_addr)), client.get_nickname(), it->get_name());
-			it->broadcast_message(client, msg, 0);
-			msg = IRC_JOIN_MSG(client.get_nickname(), it->get_name(), it->get_list_of_users());
+			chan.add_client_to_channnel(client);
+			client.set_channels(chan.get_name());
+			msg = RPL_JOIN(user_forma(client.get_nickname(), client.get_username(), inet_ntoa(client.getAddress().sin_addr)), client.get_nickname(), chan.get_name());
+			chan.broadcast_message(client, msg, 0);
+			msg = IRC_JOIN_MSG(client.get_nickname(), chan.get_name(), chan.get_list_of_users());
 			send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		}
 	}
@@ -617,45 +490,13 @@ void Server::join(Client &client, std::string target, std::string &pass)
 		newChannel.add_operator(client);
 		_channels.push_back(newChannel);
 		client.set_channels(target);
-		msg = RPL_JOIN(user_forma(client.get_nickname(), client.get_user(), inet_ntoa(client.getAddress().sin_addr)), client.get_nickname(), target);
+		msg = RPL_JOIN(user_forma(client.get_nickname(), client.get_username(), inet_ntoa(client.getAddress().sin_addr)), client.get_nickname(), target);
 		newChannel.broadcast_message(client, msg, 0);
 		msg = IRC_JOIN_MSG(client.get_nickname(), newChannel.get_name(), newChannel.get_list_of_users());
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
 	}
 }
-// tools
-bool Server::nick_already_exist(std::string nick)
-{
-	std::vector<Client>::iterator it = _clients.begin();
-	if (it == _clients.end())
-		return false;
-	else
-	{
-		for (; it != _clients.end(); it++)
-		{
-			if (it->get_nickname() == nick)
-			{
-				return true;
-			}
-		}
-	}
-	return false;
-};
-Channel &Server::find_channel(std::string channel)
-{
-	std::vector<Channel>::iterator it = _channels.begin();
-	if (it != _channels.end())
-	{
-		for (; it != _channels.end(); it++)
-		{
-			if (it->get_name() == channel)
-			{
-				return *it;
-			}
-		}
-	}
-	return channel_note_found;
-}
+
 void Server::invite(Client &client, std::string nickname, std::string channel)
 {
 	std::string msg;
@@ -795,6 +636,122 @@ void Server::topic(Client &client, std::string channel, std::string topic)
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
 	}
 }
+void Server::execute_command(Client &client)
+{
+
+	std::string command = client.getMessage();
+	std::string cmd;
+	std::string value;
+	command = filterString(command);
+	std::string array[] = {"PASS", "NICK", "USER", "PRIVMSG", "JOIN", "MODE", "INVITE", "KICK", "TOPIC", "BOTE", "QUIT"};
+	std::istringstream iss(command);
+	iss >> cmd >> value;
+	if (cmd == "PASS")
+	{
+		pass(value, client);
+		return;
+	}
+	else if (cmd == "NICK")
+	{
+		nick(value, client);
+		return;
+	}
+	else if (cmd == "USER")
+	{
+		std::string mode;
+		std::string hostName;
+		std::string realName;
+		iss >> mode >> hostName >> realName;
+		user(value, mode, hostName, realName, client);
+		return;
+	}
+	if (client.auth())
+	{
+
+		if (cmd == "PRIVMSG")
+			privmsg(client, command);
+		else if (cmd == "JOIN")
+		{
+
+			std::string pass;
+			iss>>std::ws;
+			getline(iss, pass);
+			if (!pass.empty())
+				isMultipleWords(pass, ' ') ? pass = pass.substr(1) : "";
+			join(client, value, pass);
+		}
+		else if (cmd == "MODE")
+			handle_mode(client, command);
+		else if (cmd == "INVITE")
+		{
+			std::string channel;
+			iss >> channel;
+			invite(client, value, channel);
+		}
+		else if (cmd == "KICK")
+		{
+			std::string nickname, message;
+			iss >> nickname;
+			getline(iss, message);
+			kick(client, value, nickname, message);
+		}
+		else if (cmd == "TOPIC")
+		{
+			std::string top;
+			getline(iss, top);
+			topic(client, value, top);
+		}
+		else if (cmd == "BOTE")
+			handle_bote(client);
+		else if (!stringExistsInArray(cmd, array, 11))
+		{
+			std::string msg;
+			msg = ERR_WRONG_COMMAND(server_name, client.get_nickname(), cmd);
+			send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		}
+	}
+	else
+	{
+		// need to authenticate;
+		std::string msg;
+		msg = ERR_NOTAUTHENTICATED(server_name, client.get_nickname());
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+	}
+}
+
+/****************************** TOOLS *******************************************/
+bool Server::nick_already_exist(std::string nick)
+{
+	std::vector<Client>::iterator it = _clients.begin();
+	if (it == _clients.end())
+		return false;
+	else
+	{
+		for (; it != _clients.end(); it++)
+		{
+			if (it->get_nickname() == nick)
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+};
+Channel &Server::find_channel(std::string channel)
+{
+	std::vector<Channel>::iterator it = _channels.begin();
+	if (it != _channels.end())
+	{
+		for (; it != _channels.end(); it++)
+		{
+			if (it->get_name() == channel)
+			{
+				return *it;
+			}
+		}
+	}
+	return channel_note_found;
+}
 
 void Server::cleanServer()
 {
@@ -860,7 +817,7 @@ void Server::handle_bote(Client &client)
 
 	std::string trigger("KNOCK");
 	Client &boteClient = find_client("BOTE");
-	if (boteClient.get_nickname() == "NOT_FOUND")
+	if (boteClient.get_nickname() == "NOT__FOUND")
 	{
 		std::cout << "the bot is not available" << std::endl;
 		return;
@@ -874,7 +831,7 @@ void Server::handle_bote(Client &client)
 	else
 	{
 		std::string buff(buffer);
-		std::string message = RPL_PRIVMSG(boteClient.get_nickname(), user_forma(boteClient.get_nickname(), boteClient.get_user(), "localhost"), client.get_nickname(), buff);
+		std::string message = RPL_PRIVMSG(boteClient.get_nickname(), user_forma(boteClient.get_nickname(), boteClient.get_username(), "localhost"), client.get_nickname(), buff);
 		send(client.getSocket(), message.c_str(), message.length(), 0);
 	}
 }
@@ -906,7 +863,44 @@ void Server::clearChannels(Client &client)
 void Server::welcomeClient(Client &client)
 {
 	std::string client_add = inet_ntoa(client.getAddress().sin_addr);
-	std::string welcomeMessage = ": 001 " + client.get_nickname() + " :Welcome " + client.get_nickname() + " to the Internet Relay Chat " + user_forma(client.get_nickname(), client.get_user(), client_add) + "\r\n";
+	std::string welcomeMessage = ": 001 " + client.get_nickname() + " :Welcome " + client.get_nickname() + " to the Internet Relay Chat " + user_forma(client.get_nickname(), client.get_username(), client_add) + "\r\n";
 	client.setAuth(true);
 	send(client.getSocket(), welcomeMessage.c_str(), welcomeMessage.length(), 0);
+}
+
+Client &Server::find_client(std::string nick)
+{
+	std::vector<Client>::iterator it = _clients.begin();
+	if (it != _clients.end())
+	{
+		for (; it != _clients.end(); it++)
+		{
+			if (nick == it->get_nickname())
+			{
+				return *it;
+			}
+		}
+	}
+	return client_note_found;
+}
+
+bool Server::stringExistsInArray(std::string target, std::string array[], int arraySize)
+{
+	for (int i = 0; i < arraySize; i++)
+	{
+		if (array[i] == target)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Server::checkForma(const std::string &username, std::string &mode, std::string hostName, std::string realName)
+{
+	if (username.empty() || mode.empty() || hostName.empty() || realName.empty() )
+		return false;
+	if ( mode != "0" || hostName != "*")
+		return false;
+	return true;
 }

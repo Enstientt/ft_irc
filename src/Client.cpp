@@ -70,10 +70,6 @@ std::string Client::get_realname() const{
 std::string Client::get_username() const{
     return this->userName;
 }
-std::string Client::get_user()
-{
-    return this->realname;
-}
 std::string Client::get_pwd()
 {
     return this->pwd;

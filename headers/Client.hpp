@@ -41,8 +41,6 @@ public:
     int getSocket();
     void set_nickName(std::string nick);
     std::string get_nickname();
-    void set_user(std::string userName,std::string realName);
-    std::string get_user();
     std::string get_pwd();
     void set_pwd(std::string pwd);
     void addtosetMessage(std::string message);
