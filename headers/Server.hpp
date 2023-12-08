@@ -22,6 +22,7 @@ private:
     std::string port;
     std::string server_name;
     std::string password;
+    std::string host_ip;
     int serverSocket;
     std::vector<Client> _clients;
     std::vector<Channel> _channels;
@@ -45,10 +46,10 @@ public:
     void privmsg(Client &client, std::string command);
     void join(Client &client, std::string target, std::string &password);
     void handle_mode(Client &client, std::string &command);
-    void handle_bote(Client &client);
     void invite(Client &client, std::string nickname, std::string channel);
     void kick(Client &client, std::string channel, std::string user, std::string message);
     void topic(Client &client,std::string channel, std::string topic);
+    void handle_bote(Client &client);
     /************** Tools ****************/
     Client & find_client(std::string nick);
     Channel & find_channel(std::string chan);
