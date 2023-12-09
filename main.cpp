@@ -20,6 +20,11 @@ int main(int arc, char** argv)
             std::cout << "the port must be an intger betwen 1024 to 65535."<<std::endl;
             return (1);
         }
+        if (password.find_first_of(" ") !=std::string::npos)
+        {
+            std::cout << "the server password doesn't support spaces"<<std::endl;
+            return (1);
+        }
         Server ircServer(port, password);
         ircServer.run();
     }

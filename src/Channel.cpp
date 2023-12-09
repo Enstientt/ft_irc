@@ -94,7 +94,7 @@ void Channel::remove_operator(Client &client)
     {
         for (; it != _operators.end(); it++)
         {
-            if (it->get_nickname() == client.get_nickname())
+            if (it->getSocket() == client.getSocket())
             {
                 _operators.erase(it);
                 break;
@@ -140,7 +140,7 @@ void Channel::broadcast_message(Client &client, std::string message, int flag)
                 send(it->getSocket(), message.c_str(), message.length(), 0);
             else
             {
-                if (client.get_nickname() != it->get_nickname())
+                if (client.getSocket() != it->getSocket())
                     send(it->getSocket(), message.c_str(), message.length(), 0);
             }
         }
@@ -153,7 +153,7 @@ bool Channel::in_channel(Client &client)
     {
         for (; it != _users.end(); it++)
         {
-            if (it->get_nickname() == client.get_nickname())
+            if (it->getSocket() == client.getSocket())
                 return true;
         }
     }

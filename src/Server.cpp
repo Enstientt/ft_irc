@@ -256,7 +256,7 @@ void Server::nick(std::string nick, Client &client)
 		}
 		else if (nick_already_exist(nick) == false)
 		{
-			message = ":" + client.get_nickname() + "!user@localhost"+" NICK :" + nick + "\r\n";
+			message = ":" + client.get_nickname() + "!" + client.get_username() + "@" + host_ip +" NICK :" + nick + "\r\n";
 			client.set_nickName(nick);
 			std::vector<std::string>::iterator it =  client.get_channels().begin();
 			for (; it != client.get_channels().end(); it++)
@@ -264,7 +264,7 @@ void Server::nick(std::string nick, Client &client)
 				Channel & chan = find_channel(*it);
 				chan.broadcast_message(client, message, 0);
 			}
-			//send(client.getSocket(), message.c_str(), message.length(), 0);
+			send(client.getSocket(), message.c_str(), message.length(), 0);
 		}
 		else
 		{
@@ -283,7 +283,7 @@ void Server::user(std::string username, std::string mode, std::string hostName, 
 	send(client.getSocket(), errorMessage.c_str(), errorMessage.length(), 0);
 	return;
 }
-	if (!client.get_pwd().empty() && client.auth() == false)
+	else if (!client.get_pwd().empty() && client.auth() == false)
 	{
 		client.set_username(username);
 		client.set_realname(realName);
@@ -360,6 +360,7 @@ void Server::handle_mode(Client &client, std::string &command)
 			{
 				getline(iss, parameter);
 				!parameter.empty()? parameter =parameter.substr(1):"";
+				// std::cout<<"this is the stored key*"<<parameter<<"*"<<std::endl;
 				chan.set_pass(parameter);
 				chan.set_rest(true);
 			}
@@ -499,7 +500,7 @@ void Server::join(Client &client, std::string target, std::string &pass)
 			client.set_channels(chan.get_name());
 			msg = RPL_JOIN(user_forma(client.get_nickname(), client.get_username(), host_ip), client.get_nickname(), chan.get_name());
 			chan.broadcast_message(client, msg, 0);
-			msg = IRC_JOIN_MSG(client.get_nickname(), chan.get_name(), chan.get_list_of_users());
+			msg = IRC_JOIN_MSG(client.get_nickname(), chan.get_name(), chan.get_list_of_users(),  chan.get_topic());
 			send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		}
 	}
@@ -513,7 +514,7 @@ void Server::join(Client &client, std::string target, std::string &pass)
 		client.set_channels(target);
 		msg = RPL_JOIN(user_forma(client.get_nickname(), client.get_username(), host_ip), client.get_nickname(), target);
 		newChannel.broadcast_message(client, msg, 0);
-		msg = IRC_JOIN_MSG(client.get_nickname(), newChannel.get_name(), newChannel.get_list_of_users());
+		msg = IRC_JOIN_MSG(client.get_nickname(), newChannel.get_name(), newChannel.get_list_of_users(), newChannel.get_topic());
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
 	}
 }
@@ -694,10 +695,9 @@ void Server::execute_command(Client &client)
 		else if (cmd == "JOIN")
 		{
 			std::string pass;
-			iss>>std::ws;
 			getline(iss, pass);
 			if (!pass.empty())
-				isMultipleWords(pass, ' ') > 1 ? pass = pass.substr(2) : "";
+				isMultipleWords(pass, ' ') >= 1 ? pass = pass.substr(2) :pass = pass.substr(1) ;
 			std::cout<<"this is the password"<<pass<<"*"<<std::endl;
 			join(client, value, pass);
 		}
@@ -925,3 +925,5 @@ bool Server::checkForma(const std::string &username, std::string &mode, std::str
 		return false;
 	return true;
 }
+
+// void mode()

@@ -44,6 +44,7 @@ public:
     void nick(std::string nick , Client &client);
     void user(std::string nick, std::string mode, std::string hostName, std::string realName , Client &client);
     void privmsg(Client &client, std::string command);
+    // void ultraJoin(Client &client , std::string &targets, std::string &keys);
     void join(Client &client, std::string target, std::string &password);
     void handle_mode(Client &client, std::string &command);
     void invite(Client &client, std::string nickname, std::string channel);
