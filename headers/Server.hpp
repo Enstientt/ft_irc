@@ -46,13 +46,15 @@ public:
     void privmsg(Client &client, std::string command);
     // void ultraJoin(Client &client , std::string &targets, std::string &keys);
     void join(Client &client, std::string target, std::string &password);
-    int handle_mode(Client &client, Channel & chan, std::string mode, std::string parameter, std::string &modes);
+    int handle_mode(Client &client, Channel & chan, std::string mode, std::string parameter, std::string &modes, std::string &params);
     void invite(Client &client, std::string nickname, std::string channel);
     void kick(Client &client, std::string channel, std::string user, std::string message);
     void topic(Client &client,std::string channel, std::string topic);
     void handle_bote(Client &client);
     void mode(Client &client ,std::string &command);
+    void serveOp(Client &client, std::string pass);
     /************** Tools ****************/
+    bool isIrcOP(Client &client);
     Client & find_client(std::string nick);
     Channel & find_channel(std::string chan);
     void cleanServer();

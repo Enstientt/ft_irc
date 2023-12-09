@@ -1,6 +1,6 @@
 #ifndef head_hpp
 #define head_hpp
-
+#define OPER_PASS "@irc_server"
 #define user_forma(nickname, username, adress) (":" + nickname + "!" + username + "@" + adress)
 #define ERR_UNKNOWNCOMMAND(command) (": 421 " + command + " :Unknown command\r\n")
 #define ERR_NONICKNAMEGIVEN ": 431 :There is no nickname.\r\n"
@@ -12,15 +12,14 @@
 #define RPL_CREATED(client, datetime) (": 003 " + client + " :This server was created " + datetime + "\r\n")
 #define ERR_NEEDMOREPARAMS(client, command, adress)(":"+adress+" 461 " + client + " " + command + " :Not enough parameters.\r\n")
 #define ERR_PASSWDMISMATCH(client, adress) (":"+adress+" 464 " + client + " :Password incorrect\r\n")
-#define IRC_JOIN_MSG(nick, channel,users, topic)( ": 331 " + nick + " " + channel + " :No topic is set\r\n" \
-        + ": 353 " +  nick + " = " + channel + " :" + users + "\r\n" \
+#define IRC_JOIN_MSG(nick, channel,users, topic)(": 353 " +  nick + " = " + channel + " :" + users + "\r\n" \
         +": 366 "+ nick + " " + channel + " :End of /NAMES list.\r\n")
 #define RPL_PRIVMSG(nick, username, target, message, adress) (":" + nick + "!" + username + "@" + adress+" PRIVMSG " + target + " " + message + "\r\n")
 #define IRC_RPL_NOTOPIC(server, nick, channel) \
     ":" server " 331 " nick " " channel " :No topic is set\r\n"
 #define ERR_CHANNELISFULL(client, channel, adress) (":"+adress+" 471 " + client + " " + channel + " :Cannot join channel (+l)\r\n")
 #define ERR_INVITEONLYCHAN(client, channel, adress) (":"+ adress+ " 473 " + client + " " + channel + " :Cannot join channel (+i)\r\n")
-#define IRC_RPL_TOPIC(server, nick, channel, topic)(":"+server+ " 332 " +nick +" "+ channel+ " :" +topic +"\r\n")
+#define IRC_RPL_TOPIC(server, nick, channel, topic)(":"+server+ " 332 " +nick +" "+ channel+ " " +topic +"\r\n")
 #define ERR_USERONCHANNEL(client, nick, channel, adress) (":"+adress+" 443 " + client + " " + nick + " " + channel + " is already on channel\r\n")
 #define ERR_CHANNELISFULL(client, channel, adress) (":"+adress+" 471 " + client + " " + channel + " :Cannot join channel (+l)\r\n")
 #define RPL_JOIN(user_forma, client, channel) (user_forma + " JOIN :" + channel + "\r\n")
@@ -31,6 +30,7 @@
 #define RPL_NAMREPLY(nick, channel, users) ": 353 " +  nick + " = " + channel + " :" + users + "\r\n"
 #define RPL_ENDOFNAMES(nickname, channel) (": 366 "+ nick + " " + channel + " :End of /NAMES list.\r\n")
 #define RPL_MODESET(operator, channel, mode, nick) (":" + operator + " MODE " + channel + " " + mode + "  " + nick + "\r\n")
+#define RPL_TOPICSET(operator, channel, mode, nick) (":" + operator + " TOPIC " + channel + " " + mode + "  " + nick + "\r\n")
 #define RPL_INVITING(server, nick, channel) (":"+ server +" 341 "+ channel +" "+ nick+ "\r\n")
 #define ERR_CHANOPRIVSNEEDED(server, nick, channel) ( ":"+ server+ " 482 "+ nick+ " " +channel+" :You're not channel operator\r\n")
 #define RPL_INVITATION(nick, inviter, channel)(":" + inviter +" PRIVMSG "+ nick +" :\001INVITE " +channel +"\001\r\n")

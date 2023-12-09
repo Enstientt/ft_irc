@@ -347,41 +347,54 @@ void Server::privmsg(Client &client, std::string command)
 	}
 };
 
-int Server::handle_mode(Client &client, Channel &chan, std::string mode, std::string parameter, std::string &modes)
+int Server::handle_mode(Client &client, Channel &chan, std::string mode, std::string parameter, std::string &modes, std::string &params)
 {
-	// std::istringstream iss(command);
-	// iss >> cmd >> name >> mode;
-	// Channel & chan = find_channel(name);
 	std::string msg;
-	if (chan.in_channel(client) && (chan.is_operator(client) /*|| isServerOperator())*/))
+	if (chan.in_channel(client) && (chan.is_operator(client) || isIrcOP(client)))
 	{
 		if (mode == "+k")
 		{
+			if (parameter.empty())
+			{
+				msg = ":" + server_name + " 472" + client.get_nickname() + " " + chan.get_name() + " : k * You must specify a parameter for the key mode. Syntax: <key>\r\n";
+				send(client.getSocket(), msg.c_str(), msg.length(), 0);
+				return 0;
+			}
 			chan.set_pass(parameter);
 			chan.set_rest(true);
-			modes +=mode;
+			modes += mode;
+			params += " " + parameter;
 			return 1;
 		}
 		else if (mode == "-k")
 		{
 			chan.set_rest(false);
-			modes +=mode;
+			modes += mode;
+			params += " " + parameter;
 			return 0;
 		}
 		else if (mode == "+t")
 		{
 			chan.set_topic_protected(true);
-			modes +=mode;
+			modes += mode;
+			params += " " + parameter;
 			return 0;
 		}
 		else if (mode == "-t")
 		{
 			chan.set_topic_protected(false);
-			modes +=mode;
+			modes += mode;
+			params += " " + parameter;
 			return 0;
 		}
 		else if (mode == "+o" || mode == "-o")
 		{
+			if (parameter.empty())
+			{
+				msg = ":" + server_name + " 472" + client.get_nickname() + " " + chan.get_name() + " : o * You must specify a parameter for the op mode. Syntax: <nick>\r\n";
+				send(client.getSocket(), msg.c_str(), msg.length(), 0);
+				return 0;
+			}
 			Client &cl = find_client(parameter);
 			if (cl.get_nickname() == "NOT__FOUND")
 			{
@@ -399,7 +412,8 @@ int Server::handle_mode(Client &client, Channel &chan, std::string mode, std::st
 					chan.add_operator(cl);
 				else if (mode == "-o" && chan.is_operator(cl))
 					chan.remove_operator(cl);
-				modes +=mode;
+				modes += mode;
+				params += " " + parameter;
 			}
 			return 1;
 		}
@@ -407,38 +421,43 @@ int Server::handle_mode(Client &client, Channel &chan, std::string mode, std::st
 		{
 			if (parameter.empty())
 			{
-				msg = ERR_NEEDMOREPARAMS(client.get_nickname(), "MODE", host_ip);
+				msg = ":" + server_name + " 472" + client.get_nickname() + " " + chan.get_name() + " :l * You must specify a parameter for the limit mode. Syntax: <limit>\r\n";
 				send(client.getSocket(), msg.c_str(), msg.length(), 0);
 				return 0;
 			}
-			if (parameter.find_first_not_of("0123456789") != std::string::npos){
-				msg = ERR_UNKNOWNMODE(client.get_nickname(), mode);
+			if (parameter.find_first_not_of("0123456789") != std::string::npos)
+			{
+				msg = ":" + server_name + " 472" + client.get_nickname() + " " + chan.get_name() + " :the limite parameter should be a numeric value\r\n";
 				send(client.getSocket(), msg.c_str(), msg.length(), 0);
 				return 0;
 			}
 			chan.set_limit(std::stoi(parameter));
 			chan.set_lim_state(true);
-			modes +=mode;
+			modes += mode;
+			params += " " + parameter;
 			return 1;
 		}
 		else if (mode == "-l")
 		{
 			chan.set_limit(MAX_CLIENTS);
 			chan.set_lim_state(false);
-			modes +=mode;
+			modes += mode;
+			params += " " + parameter;
 			return 0;
 		}
 
 		else if (mode == "+i")
 		{
 			chan.set_invite_only(true);
-			modes +=mode;
+			modes += mode;
+			params += " " + parameter;
 			return 0;
 		}
 		else if (mode == "-i")
 		{
 			chan.set_invite_only(false);
-			modes +=mode;
+			modes += mode;
+			params += " " + parameter;
 			return 0;
 		}
 		else
@@ -507,6 +526,7 @@ void Server::join(Client &client, std::string target, std::string &pass)
 			chan.broadcast_message(client, msg, 0);
 			std::cout << "*****" << chan.get_topic() << std::endl;
 			msg = IRC_JOIN_MSG(client.get_nickname(), chan.get_name(), chan.get_list_of_users(), chan.get_topic());
+			msg += IRC_RPL_TOPIC(server_name, client.get_nickname(), target, chan.get_topic());
 			send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		}
 	}
@@ -521,6 +541,7 @@ void Server::join(Client &client, std::string target, std::string &pass)
 		msg = RPL_JOIN(user_forma(client.get_nickname(), client.get_username(), host_ip), client.get_nickname(), target);
 		newChannel.broadcast_message(client, msg, 0);
 		msg = IRC_JOIN_MSG(client.get_nickname(), newChannel.get_name(), newChannel.get_list_of_users(), newChannel.get_topic());
+		msg += IRC_RPL_TOPIC(server_name, client.get_nickname(), target, chan.get_topic());
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
 	}
 }
@@ -642,8 +663,9 @@ void Server::topic(Client &client, std::string channel, std::string topic)
 	{
 		if (chan.is_operator(client))
 		{
+
 			chan.set_topic(topic);
-			msg = IRC_RPL_TOPIC(server_name, client.get_nickname(), channel, topic);
+			msg += IRC_RPL_TOPIC(server_name, client.get_nickname(), channel, topic);
 			chan.broadcast_message(client, msg, 0);
 		}
 		else
@@ -655,7 +677,7 @@ void Server::topic(Client &client, std::string channel, std::string topic)
 	else if (!chan.get_topic_state() && !topic.empty())
 	{
 		chan.set_topic(topic);
-		msg = IRC_RPL_TOPIC(server_name, client.get_nickname(), channel, topic);
+		msg += IRC_RPL_TOPIC(server_name, client.get_nickname(), channel, topic);
 		chan.broadcast_message(client, msg, 0);
 	}
 	else if (topic.empty())
@@ -671,7 +693,7 @@ void Server::execute_command(Client &client)
 	std::string cmd;
 	std::string value;
 	command = filterString(command);
-	std::string array[] = {"PASS", "NICK", "USER", "PRIVMSG", "JOIN", "MODE", "INVITE", "KICK", "TOPIC", "BOTE", "QUIT"};
+	std::string array[] = {"PASS","OPER", "NICK", "USER", "PRIVMSG", "JOIN", "MODE", "INVITE", "KICK", "TOPIC", "BOTE", "QUIT"};
 	std::istringstream iss(command);
 	iss >> cmd >> value;
 	if (cmd == "PASS")
@@ -732,6 +754,10 @@ void Server::execute_command(Client &client)
 		}
 		else if (cmd == "BOTE")
 			handle_bote(client);
+		else if (cmd == "OPER")
+		{
+			serveOp(client, value);
+		}
 		else if (!stringExistsInArray(cmd, array, 11))
 		{
 			std::string msg;
@@ -947,10 +973,10 @@ std::vector<std::string> split(const std::string &s, char delim)
 
 void Server::mode(Client &client, std::string &command)
 {
-	(void)client;
-	std::string cmd, sMode, name, mode, params,modes, signe, msg;
+	std::string cmd, sMode, name, mode, params, modes, signe, msg;
 	std::istringstream iss(command);
 	iss >> cmd >> name >> mode;
+	cmd = "";
 	getline(iss, params);
 	!params.empty() ? params = params.substr(1) : "";
 	std::vector<std::string> parameters = split(params, ' ');
@@ -968,11 +994,11 @@ void Server::mode(Client &client, std::string &command)
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		return;
 	}
+
 	if (mode[0] != '-' && mode[0] != '+')
 		return;
 	signe += mode[0];
 	int i = 1;
-	// for(std::vector<std::string>::iterator it = parameters.begin();it!=parameters.end();it++)
 	for (; i < (int)mode.length(); i++)
 	{
 		if (mode[i] == '-' || mode[i] == '+')
@@ -983,21 +1009,55 @@ void Server::mode(Client &client, std::string &command)
 		else
 		{
 			sMode = signe + mode[i];
-			if ((signe == "-"  || mode[i] == 'i' || mode[i]=='t') && mode[i] !='o')
-				handle_mode(client, chan, sMode, "", modes);
+			if ((signe == "-" || mode[i] == 'i' || mode[i] == 't') && mode[i] != 'o')
+				handle_mode(client, chan, sMode, "", modes, cmd);
 			else
 			{
-				if (it!=parameters.end())
+				if (it != parameters.end())
 				{
-					handle_mode(client, chan, sMode, *it,modes);
+					handle_mode(client, chan, sMode, *it, modes, cmd);
 					it++;
 				}
 				else
-					handle_mode(client, chan, sMode, "", modes);
+					handle_mode(client, chan, sMode, "", modes, cmd);
 			}
 		}
 	}
-	// Channel & chan = find_channel(name);
-	msg = RPL_MODESET(client.get_nickname(), chan.get_name(), modes," ");
-	chan.broadcast_message(client, msg, 0);
+	if (!cmd.empty())
+	{
+		msg = RPL_MODESET(client.get_nickname(), chan.get_name(), modes, cmd);
+		chan.broadcast_message(client, msg, 0);
+	}
+}
+
+void Server::serveOp(Client &client , std::string pass)
+{
+	std::string client_add = inet_ntoa(client.getAddress().sin_addr);
+	std::string msg;
+	if (client_add == "127.0.0.1" && pass == OPER_PASS)
+	{
+		_server_operators.push_back(client);
+	}
+	else if (pass !=OPER_PASS)
+	{
+		msg = ERR_PASSWDMISMATCH(client.get_nickname(), host_ip);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+	}
+	else if(client_add != "127.0.0.1")
+	{
+		std::cout<<client_add<<"  "<<host_ip<<std::endl;
+		msg = ":"+server_name + " 491 "+ client.get_nickname()+" :No O-lines for your host\r\n";
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+	}
+}
+
+bool Server::isIrcOP(Client &client)
+{
+	std::vector<Client >::iterator it = _server_operators.begin();
+	for(;it!=_server_operators.end();it++)
+	{
+		if (it->get_nickname() == client.get_nickname())
+			return true;
+	}
+	return false;
 }
