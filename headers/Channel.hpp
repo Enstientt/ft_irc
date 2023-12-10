@@ -37,6 +37,7 @@ class Channel{
         std::string get_modes();
         void set_mode(std::string mode);
         int channel_size();
+        void updateNick(Client &client, std::string nick);
         void add_client_to_channnel(Client &client);
         void remove_client_from_channel(Client &client);
         void add_operator(Client &client);

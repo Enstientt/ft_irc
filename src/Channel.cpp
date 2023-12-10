@@ -227,3 +227,27 @@ void Channel::set_topic(std::string topic)
 {
     this->_topic = topic;
 }
+
+void Channel::updateNick(Client &client, std::string nick){
+    std::vector<Client>::iterator it = _users.begin();
+    std::vector<Client>::iterator ito = _operators.begin();
+    for(;it!=_users.end();it++)
+    {
+        if(client.getSocket() == it->getSocket())
+        {
+            it->set_nickName(nick);
+            break;
+        }
+    }
+    if (is_operator(client))
+    {
+           for(;ito!=_operators.end();ito++)
+    {
+        if(client.getSocket() == ito->getSocket())
+        {
+            ito->set_nickName(nick);
+            break;
+        }
+    }
+    }
+}

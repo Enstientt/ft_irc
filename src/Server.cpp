@@ -257,13 +257,14 @@ void Server::nick(std::string nick, Client &client)
 		else if (nick_already_exist(nick) == false)
 		{
 			message = ":" + client.get_nickname() + "!" + client.get_username() + "@" + host_ip + " NICK :" + nick + "\r\n";
-			client.set_nickName(nick);
 			std::vector<std::string>::iterator it = client.get_channels().begin();
 			for (; it != client.get_channels().end(); it++)
 			{
 				Channel &chan = find_channel(*it);
+				chan.updateNick(client,nick);
 				chan.broadcast_message(client, message, 0);
 			}
+			client.set_nickName(nick);
 			send(client.getSocket(), message.c_str(), message.length(), 0);
 		}
 		else
