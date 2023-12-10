@@ -93,7 +93,6 @@ void handleQuotes(int socket, std::string str)
     std::srand(std::time(0));
     int random = std::rand() % 68;
     std::string to_send(quotes[random]);
-    // to_send = to_send ;
     to_send = str + " :" + to_send + "\r\n";
     send(socket, to_send.c_str(), to_send.length(), 0);
 }
@@ -116,11 +115,6 @@ int main(int argc, char** argv)
 			perror("setsockopt");
 			exit(EXIT_FAILURE);
 		}
-        // if (fcntl(bot_socket, F_SETFL, O_NONBLOCK) ==-1)
-		// {
-		// 	perror("fcntl");
-		// 	exit(EXIT_FAILURE);
-		// }
         sockaddr_in sockaddr;
         memset(&hints, 0, sizeof(sockaddr));
         hints.ai_family = AF_INET;
@@ -143,10 +137,6 @@ int main(int argc, char** argv)
         pass = "BOTE@gamil.com\r\n";
         send(bot_socket, pass.c_str(), pass.length(), 0);
         char buffer[256];
-        // memset(buffer, 0, sizeof(buffer));
-        // int byte = recv(bot_socket, buffer, sizeof(buffer), 0);
-        // buffer[byte] = '\0';
-        // std::cout<<buffer<<std::endl;
         while(true)
         {
             memset(buffer, 0, sizeof(buffer));
