@@ -159,12 +159,12 @@ void Server::handleClient(int index)
 					}
 					if (it->getMessage().find('\n') != std::string::npos)
 					{
-						if (isMultipleWords(it->getMessage(), '\n') > 1)
-							handleMulti(*it);
-						else
-						{
+						// if (isMultipleWords(it->getMessage(), '\n') > 1)
+						// 	handleMulti(*it);
+						// else
+						// {
 							execute_command(*it);
-						}
+						// }
 						std::cout << "client " << index << " :" << it->getMessage();
 						it->setMessage("");
 					}
@@ -480,6 +480,12 @@ void Server::join(Client &client, std::string target, std::string &pass)
 	std::string msg;
 	int toggler = 0;
 
+	if (target.empty())
+	{
+		msg = ERR_NEEDMOREPARAMS(client.get_nickname(), "JOIN", host_ip);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		return;
+	}
 	Channel &chan = find_channel(target);
 	// check if the channel exist
 	if (chan.get_name() != channel_note_found.get_name())

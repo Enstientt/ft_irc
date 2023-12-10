@@ -140,7 +140,7 @@ void Channel::broadcast_message(Client &client, std::string message, int flag)
                 send(it->getSocket(), message.c_str(), message.length(), 0);
             else
             {
-                if (client.getSocket() != it->getSocket())
+                if (client.get_nickname() != it->get_nickname())
                     send(it->getSocket(), message.c_str(), message.length(), 0);
             }
         }
