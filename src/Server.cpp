@@ -330,7 +330,7 @@ void Server::privmsg(Client &client, std::string command)
 	else
 	{
 		Client &cl = find_client(target);
-		if (cl.get_nickname() != client_note_found.get_nickname())
+		if (cl.get_nickname() != client_note_found.get_nickname() && target != "QUOTE_BOTE")
 		{
 			message = RPL_PRIVMSG(client.get_nickname(), cl.get_username(), target, msg, host_ip);
 			send(cl.getSocket(), message.c_str(), message.length(), 0);

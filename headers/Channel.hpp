@@ -33,9 +33,6 @@ class Channel{
         void set_invite_only(bool state);
         bool is_invite_only() const ;
         bool is_full() const ;
-        bool has_password() const ;
-        std::string get_modes();
-        void set_mode(std::string mode);
         int channel_size();
         void updateNick(Client &client, std::string nick);
         void add_client_to_channnel(Client &client);

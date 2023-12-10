@@ -162,6 +162,7 @@ int main(int argc, char** argv)
         }
         freeaddrinfo(res);
         res = NULL;
+        close(bot_socket);
     }
     else
     {

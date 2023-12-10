@@ -20,15 +20,12 @@ private:
     std::string hostName;
     std::string userName;
     bool is_authenticate;
-    bool is_registered;
     std::vector<std::string> _channels;
     std::string pwd;
 public:
     Client();
     Client(int socket, const sockaddr_in& address);
     int getSocket() const;
-    bool get_reg() const;
-    void set_reg(bool reg);
     void set_username(std::string username);
     std::string get_realname() const;
     std::string get_username() const;

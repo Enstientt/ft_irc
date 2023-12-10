@@ -43,10 +43,10 @@ bool Channel::is_full() const
     return (int)_users.size() >= limit;
 }
 
-bool Channel::has_password() const
-{
-    return !_pwd.empty();
-}
+// bool Channel::has_password() const
+// {
+//     return !_pwd.empty();
+// }
 Channel::Channel(std::string name, std::string pass) : name(name)
 {
     _pwd = pass;
@@ -58,21 +58,6 @@ Channel::Channel(std::string name, std::string pass) : name(name)
     t = "-t";
     k = "-k";
     l = "-l";
-};
-std::string Channel::get_modes()
-{
-    return (i + t + k + o + l);
-}
-void Channel::set_mode(std::string mode)
-{
-    if (mode[1] == 'i')
-        i = mode;
-    else if (mode[1] == 't')
-        t = mode;
-    else if (mode[1] == 'k')
-        k = mode;
-    else if (mode[1] == 'l')
-        l = mode;
 };
 
 int Channel::channel_size()
