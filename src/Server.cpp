@@ -159,12 +159,7 @@ void Server::handleClient(int index)
 					}
 					if (it->getMessage().find('\n') != std::string::npos)
 					{
-						// if (isMultipleWords(it->getMessage(), '\n') > 1)
-						// 	handleMulti(*it);
-						// else
-						// {
-							execute_command(*it);
-						// }
+						execute_command(*it);
 						std::cout << "client " << index << " :" << it->getMessage();
 						it->setMessage("");
 					}
