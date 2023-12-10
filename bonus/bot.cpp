@@ -12,7 +12,13 @@
 #include <netdb.h>
 #include <fstream>
 
-void handleQuotes(int socket)
+void signal_handler(int signal)
+{
+    (void)signal;
+    exit(EXIT_SUCCESS);
+}
+
+void handleQuotes(int socket, std::string str)
 {
     const char* quotes[] = {
         "The only way to do great work is to love what you do. - Steve Jobs",
@@ -87,12 +93,13 @@ void handleQuotes(int socket)
     std::srand(std::time(0));
     int random = std::rand() % 68;
     std::string to_send(quotes[random]);
-    to_send = ": " + to_send ;
-    to_send +="\r\n";
+    // to_send = to_send ;
+    to_send = str + " :" + to_send + "\r\n";
     send(socket, to_send.c_str(), to_send.length(), 0);
 }
 int main(int argc, char** argv)
 {
+    signal(SIGINT, signal_handler);
   if(argc == 4)
     {
         struct addrinfo *res, hints;
@@ -109,11 +116,11 @@ int main(int argc, char** argv)
 			perror("setsockopt");
 			exit(EXIT_FAILURE);
 		}
-        if (fcntl(bot_socket, F_SETFD, O_NONBLOCK) ==-1)
-		{
-			perror("fcntl");
-			exit(EXIT_FAILURE);
-		}
+        // if (fcntl(bot_socket, F_SETFL, O_NONBLOCK) ==-1)
+		// {
+		// 	perror("fcntl");
+		// 	exit(EXIT_FAILURE);
+		// }
         sockaddr_in sockaddr;
         memset(&hints, 0, sizeof(sockaddr));
         hints.ai_family = AF_INET;
@@ -133,13 +140,13 @@ int main(int argc, char** argv)
         std::cout << "Connected to the server!" << std::endl;
         //authenticated to the server
         std::string pass(argv[3]);
-        std::string nick("BOTE");
-        std::string user("bote 0 * boted");
-        pass = "PASS "+ pass + "\r\n";
-        pass += "NICK " + nick + "\r\n";
-        pass += "USER " + user + "\r\n";
+        pass = "BOTE@gamil.com\r\n";
         send(bot_socket, pass.c_str(), pass.length(), 0);
         char buffer[256];
+        // memset(buffer, 0, sizeof(buffer));
+        // int byte = recv(bot_socket, buffer, sizeof(buffer), 0);
+        // buffer[byte] = '\0';
+        // std::cout<<buffer<<std::endl;
         while(true)
         {
             memset(buffer, 0, sizeof(buffer));
@@ -157,8 +164,10 @@ int main(int argc, char** argv)
             {
                 buffer[byte] = '\0';
                 std::string str(buffer);
-                if (str == "KNOCK")
-                    handleQuotes(bot_socket);
+                if (byte > 0)
+                {
+                    handleQuotes(bot_socket, str);
+                }
             }
         }
         freeaddrinfo(res);

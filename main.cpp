@@ -6,7 +6,6 @@ void signal_handler(int signal)
     exit(EXIT_SUCCESS);
 }
 
-
 int main(int arc, char** argv)
 {
     signal(SIGINT, signal_handler);

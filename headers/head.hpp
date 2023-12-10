@@ -1,6 +1,7 @@
 #ifndef head_hpp
 #define head_hpp
 #define OPER_PASS "@irc_server"
+#define BOTE_ID "BOTE@gamil.com"
 #define user_forma(nickname, username, adress) (":" + nickname + "!" + username + "@" + adress)
 #define ERR_UNKNOWNCOMMAND(command) (": 421 " + command + " :Unknown command\r\n")
 #define ERR_NONICKNAMEGIVEN ": 431 :There is no nickname.\r\n"

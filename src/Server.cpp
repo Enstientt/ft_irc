@@ -696,6 +696,14 @@ void Server::execute_command(Client &client)
 	std::string array[] = {"PASS","OPER", "NICK", "USER", "PRIVMSG", "JOIN", "MODE", "INVITE", "KICK", "TOPIC", "BOTE", "QUIT"};
 	std::istringstream iss(command);
 	iss >> cmd >> value;
+	if (cmd == BOTE_ID)
+	{
+		client.set_nickName("QUOTE_BOTE");
+		client.set_realname("quote_bote");
+		client.set_username("bote");
+		client.setAuth(true);
+		return;
+	}
 	if (cmd == "PASS")
 	{
 		pass(value, client);
@@ -870,24 +878,17 @@ bool Server::isValidNick(const std::string &nick)
 void Server::handle_bote(Client &client)
 {
 
-	std::string trigger("KNOCK");
-	Client &boteClient = find_client("BOTE");
+	// std::string trigger("KNOCK");
+	Client &boteClient = find_client("QUOTE_BOTE");
 	if (boteClient.get_nickname() == "NOT__FOUND")
 	{
 		std::cout << "the bot is not available" << std::endl;
 		return;
 	}
-	send(boteClient.getSocket(), trigger.c_str(), trigger.length(), 0);
-	char buffer[256];
-	memset(buffer, 0, sizeof(buffer));
-	int bytes_received = recv(boteClient.getSocket(), buffer, sizeof(buffer), 0);
-	if (bytes_received == -1 || bytes_received == 0)
-		std::cout << "Error" << std::endl;
 	else
 	{
-		std::string buff(buffer);
-		std::string message = RPL_PRIVMSG(boteClient.get_nickname(), user_forma(boteClient.get_nickname(), boteClient.get_username(), host_ip), client.get_nickname(), buff, host_ip);
-		send(client.getSocket(), message.c_str(), message.length(), 0);
+		std::string message ="PRIVMSG " + client.get_nickname();
+		send(boteClient.getSocket(), message.c_str(), message.length(), 0);
 	}
 }
 
