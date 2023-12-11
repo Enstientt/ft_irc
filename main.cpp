@@ -27,6 +27,8 @@ int main(int arc, char** argv)
         Server ircServer(port, password);
         ircServer.run();
     }
+    else
+        std::cerr << "Usage: " << argv[0] << " <PORT> <SERVER PASSWORD>" << std::endl;
 
     return 0;
 }

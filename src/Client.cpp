@@ -49,12 +49,7 @@ std::string Client::get_nickname()
 {
     return this->nickName;
 }
-// void Client::set_reg(bool reg){
-//     this->is_registered = reg;
-// }
-// bool Client::get_reg() const{
-//     return this->is_registered;
-// }
+
 void Client::set_username(std::string username)
 {
     this->userName = username;

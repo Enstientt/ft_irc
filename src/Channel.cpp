@@ -43,10 +43,6 @@ bool Channel::is_full() const
     return (int)_users.size() >= limit;
 }
 
-// bool Channel::has_password() const
-// {
-//     return !_pwd.empty();
-// }
 Channel::Channel(std::string name, std::string pass) : name(name)
 {
     _pwd = pass;

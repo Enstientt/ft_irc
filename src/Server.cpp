@@ -11,31 +11,26 @@ Server::Server()
 }
 Server::Server(std::string port, std::string password) : port(port), password(password)
 {
-	// initialize client and channel con
 	server_name = "Irc-Server";
 	client_note_found.set_nickName("NOT__FOUND");
 	channel_note_found.set_name("NOT_FOUND");
-	// Create a socket
 	serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (serverSocket == -1)
 	{
 		std::cout << "Error in creating the socket" << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	// set socket opt
 	int opt = 1;
 	if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
 	{
 		perror("setsockopt");
 		exit(EXIT_FAILURE);
 	}
-	// non-block fd
 	if (fcntl(serverSocket, F_SETFL, O_NONBLOCK) == -1)
 	{
 		perror("fcntl");
 		exit(EXIT_FAILURE);
 	}
-	// Bind the socket to a specific IP and port
 	char hostname[128];
 	sockaddr_in sock_add;
 	int port_1 = atoi(port.c_str());
@@ -52,19 +47,16 @@ Server::Server(std::string port, std::string password) : port(port), password(pa
 	h = gethostbyname(hostname);
 	char *ip = inet_ntoa(*((struct in_addr *)h->h_addr_list[0]));
 	host_ip = ip;
-	// Listen for incoming connections
 	if (listen(serverSocket, MAX_CLIENTS) == -1)
 	{
 		std::cout << "Error while listening" << std::endl;
 		exit(EXIT_FAILURE);
 	}
-
-	// Initialize poll structure
 	fds[0].fd = serverSocket;
 	fds[0].events = POLLIN;
 	for (int i = 1; i < MAX_CLIENTS + 1; ++i)
 	{
-		fds[i].fd = -1; // Initialize with an invalid value
+		fds[i].fd = -1;
 	}
 }
 
@@ -85,13 +77,10 @@ void Server::run()
 			exit(EXIT_FAILURE);
 		}
 
-		// Check for incoming connection requests
 		if (fds[0].revents & POLLIN)
 		{
 			acceptConnection();
 		}
-
-		// Check for data to read and disconnects on existing client sockets
 		for (int i = 1; i < MAX_CLIENTS + 1; ++i)
 		{
 			if (fds[i].revents & (POLLIN | POLLHUP | POLLERR))
@@ -125,7 +114,6 @@ void Server::acceptConnection()
 
 	if (i == MAX_CLIENTS + 1)
 	{
-		// No available slot for the new client
 		std::cout << "Connection limit reached. Rejecting new connection." << std::endl;
 		close(newSocket);
 	}
@@ -137,7 +125,6 @@ void Server::handleClient(int index)
 	std::vector<Client>::iterator it;
 	char buffer[512];
 	bzero(buffer, 512);
-	// Attempt to receive 1 byte from the client
 	int bytesRead = recv(fds[index].fd, buffer, sizeof(buffer), MSG_PEEK);
 	if (bytesRead > 0)
 	{
@@ -160,7 +147,6 @@ void Server::handleClient(int index)
 					if (it->getMessage().find('\n') != std::string::npos)
 					{
 						execute_command(*it);
-						std::cout << "client " << index << " :" << it->getMessage();
 						it->setMessage("");
 					}
 				}
@@ -169,7 +155,6 @@ void Server::handleClient(int index)
 	}
 	else if (bytesRead == 0 || bytesRead == -1)
 	{
-		// Client has closed the connection
 		std::cout << "Client " << index << " disconnected." << std::endl;
 		std::vector<Client>::iterator it = _clients.begin();
 		for (; it != _clients.end(); it++)
@@ -217,7 +202,6 @@ void Server::pass(std::string password, Client &client)
 void Server::nick(std::string nick, Client &client)
 {
 	std::string message;
-	// if not authenticate just processd with authentication
 	if (nick.empty())
 	{
 		message = ERR_NONICKNAMEGIVEN;
@@ -241,7 +225,6 @@ void Server::nick(std::string nick, Client &client)
 			send(client.getSocket(), message.c_str(), message.length(), 0);
 		}
 	}
-	// changing the nickname
 	else if (client.auth() == true)
 	{
 		if (!isValidNick(nick))
@@ -301,12 +284,13 @@ void Server::privmsg(Client &client, std::string command)
 	std::string message;
 	iss >> cmd >> target >> std::ws;
 	std::getline(iss, msg);
+	std::istringstream is(msg);
+	!msg.empty() && msg[0] !=':' ? is>>msg:is;
 	if (target.empty() || msg.empty())
 	{
 		message = ERR_NEEDMOREPARAMS(client.get_nickname(), cmd, host_ip);
 		send(client.getSocket(), message.c_str(), message.length(), 0);
 	}
-	// handle channel
 	else if (target[0] == '#')
 	{
 		Channel &chan = find_channel(target);
@@ -326,7 +310,6 @@ void Server::privmsg(Client &client, std::string command)
 			send(client.getSocket(), message.c_str(), message.length(), 0);
 		}
 	}
-	// handle users
 	else
 	{
 		Client &cl = find_client(target);
@@ -423,11 +406,11 @@ int Server::handle_mode(Client &client, Channel &chan, std::string mode, std::st
 			}
 			if (parameter.find_first_not_of("0123456789") != std::string::npos)
 			{
-				msg = ":" + server_name + " 472" + client.get_nickname() + " " + chan.get_name() + " :the limite parameter should be a numeric value\r\n";
+				msg = ":" + server_name + " 472" + client.get_nickname() + " " + chan.get_name() + " :the limite parameter should be a numeric value l >= 0\r\n";
 				send(client.getSocket(), msg.c_str(), msg.length(), 0);
 				return 0;
 			}
-			chan.set_limit(std::stoi(parameter));
+			chan.set_limit(atoi(parameter.c_str()));
 			chan.set_lim_state(true);
 			modes += mode;
 			params += " " + parameter;
@@ -476,14 +459,13 @@ void Server::join(Client &client, std::string target, std::string &pass)
 	std::string msg;
 	int toggler = 0;
 
-	if (target.empty())
+	if (target.empty() || target[0] !='#')
 	{
 		msg = ERR_NEEDMOREPARAMS(client.get_nickname(), "JOIN", host_ip);
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		return;
 	}
 	Channel &chan = find_channel(target);
-	// check if the channel exist
 	if (chan.get_name() != channel_note_found.get_name())
 	{
 		std::string ps = chan.get_pass();
@@ -526,7 +508,6 @@ void Server::join(Client &client, std::string target, std::string &pass)
 			client.set_channels(chan.get_name());
 			msg = RPL_JOIN(user_forma(client.get_nickname(), client.get_username(), host_ip), client.get_nickname(), chan.get_name());
 			chan.broadcast_message(client, msg, 0);
-			std::cout << "*****" << chan.get_topic() << std::endl;
 			msg = IRC_JOIN_MSG(client.get_nickname(), chan.get_name(), chan.get_list_of_users(), chan.get_topic());
 			msg += IRC_RPL_TOPIC(server_name, client.get_nickname(), target, chan.get_topic());
 			send(client.getSocket(), msg.c_str(), msg.length(), 0);
@@ -534,7 +515,6 @@ void Server::join(Client &client, std::string target, std::string &pass)
 	}
 	else
 	{
-		// Create the channel and add the client to it
 		Channel newChannel(target, pass);
 		newChannel.add_client_to_channnel(client);
 		newChannel.add_operator(client);
@@ -571,7 +551,7 @@ void Server::invite(Client &client, std::string nickname, std::string channel)
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		return;
 	}
-	if (chan.is_operator(client))
+	if (chan.is_operator(client) || isIrcOP(client))
 	{
 		if (chan.in_channel(cl))
 		{
@@ -617,7 +597,7 @@ void Server::kick(Client &client, std::string channel, std::string user, std::st
 		send(client.getSocket(), msg.c_str(), msg.length(), 0);
 		return;
 	}
-	if (chan.is_operator(client))
+	if (chan.is_operator(client) || isIrcOP(client))
 	{
 		if (!chan.in_channel(cl))
 		{
@@ -663,7 +643,7 @@ void Server::topic(Client &client, std::string channel, std::string topic)
 	}
 	if (chan.get_topic_state() && !topic.empty())
 	{
-		if (chan.is_operator(client))
+		if (chan.is_operator(client) || isIrcOP(client))
 		{
 
 			chan.set_topic(topic);
@@ -736,7 +716,6 @@ void Server::execute_command(Client &client)
 			getline(iss, pass);
 			if (!pass.empty())
 				isMultipleWords(pass, ' ') >= 1 ? pass = pass.substr(2) : pass = pass.substr(1);
-			std::cout << "this is the password" << pass << "*" << std::endl;
 			join(client, value, pass);
 		}
 		else if (cmd == "MODE")
@@ -784,6 +763,89 @@ void Server::execute_command(Client &client)
 	}
 }
 
+void Server::mode(Client &client, std::string &command)
+{
+	std::string cmd, sMode, name, mode, params, modes, signe, msg;
+	std::istringstream iss(command);
+	iss >> cmd >> name >> mode;
+	cmd = "";
+	getline(iss, params);
+	!params.empty() ? params = params.substr(1) : "";
+	std::vector<std::string> parameters = split(params, ' ');
+	std::vector<std::string>::iterator it = parameters.begin();
+	Channel &chan = find_channel(name);
+	if (chan.get_name() == channel_note_found.get_name())
+	{
+		msg = ERR_NOSUCHCHANNEL(client.get_nickname(), chan.get_name(), host_ip);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		return;
+	}
+	if (!chan.in_channel(client))
+	{
+		msg = ERR_NOTONCHANNEL(client.get_nickname(), chan.get_name(), host_ip);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		return;
+	}
+
+	if (mode[0] != '-' && mode[0] != '+')
+	{
+		msg = ERR_UNKNOWNMODE(client.get_nickname(), mode);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+		return;
+	}
+	signe += mode[0];
+	int i = 1;
+	for (; i < (int)mode.length(); i++)
+	{
+		if (mode[i] == '-' || mode[i] == '+')
+		{
+			signe = mode[i];
+			continue;
+		}
+		else
+		{
+			sMode = signe + mode[i];
+			if ((signe == "-" || mode[i] == 'i' || mode[i] == 't') && mode[i] != 'o')
+				handle_mode(client, chan, sMode, "", modes, cmd);
+			else
+			{
+				if (it != parameters.end())
+				{
+					handle_mode(client, chan, sMode, *it, modes, cmd);
+					it++;
+				}
+				else
+					handle_mode(client, chan, sMode, "", modes, cmd);
+			}
+		}
+	}
+	if (!cmd.empty())
+	{
+		msg = RPL_MODESET(client.get_nickname(), chan.get_name(), modes, cmd);
+		chan.broadcast_message(client, msg, 0);
+	}
+}
+
+void Server::serveOp(Client &client , std::string pass)
+{
+	std::string client_add = inet_ntoa(client.getAddress().sin_addr);
+	std::string msg;
+	if (client_add == "127.0.0.1" && pass == OPER_PASS)
+	{
+		_server_operators.push_back(client);
+	}
+	else if (pass !=OPER_PASS)
+	{
+		msg = ERR_PASSWDMISMATCH(client.get_nickname(), host_ip);
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+	}
+	else if(client_add != "127.0.0.1")
+	{
+		std::cout<<client_add<<"  "<<host_ip<<std::endl;
+		msg = ":"+server_name + " 491 "+ client.get_nickname()+" :No O-lines for your host\r\n";
+		send(client.getSocket(), msg.c_str(), msg.length(), 0);
+	}
+}
 /****************************** TOOLS *******************************************/
 bool Server::nick_already_exist(std::string nick)
 {
@@ -879,8 +941,6 @@ bool Server::isValidNick(const std::string &nick)
 
 void Server::handle_bote(Client &client)
 {
-
-	// std::string trigger("KNOCK");
 	Client &boteClient = find_client("QUOTE_BOTE");
 	if (boteClient.get_nickname() == "NOT__FOUND")
 	{
@@ -922,6 +982,7 @@ void Server::welcomeClient(Client &client)
 {
 	std::string client_add = inet_ntoa(client.getAddress().sin_addr);
 	std::string welcomeMessage = ": 001 " + client.get_nickname() + " :Welcome " + client.get_nickname() + " to the Internet Relay Chat " + user_forma(client.get_nickname(), client.get_username(), host_ip) + "\r\n";
+	welcomeMessage += RPL_YOURHOST(server_name);
 	client.setAuth(true);
 	send(client.getSocket(), welcomeMessage.c_str(), welcomeMessage.length(), 0);
 }
@@ -962,7 +1023,7 @@ bool Server::checkForma(const std::string &username, std::string &mode, std::str
 		return false;
 	return true;
 }
-std::vector<std::string> split(const std::string &s, char delim)
+std::vector<std::string> Server::split(const std::string &s, char delim)
 {
 	std::vector<std::string> elems;
 	std::stringstream ss(s);
@@ -972,86 +1033,6 @@ std::vector<std::string> split(const std::string &s, char delim)
 		elems.push_back(item);
 	}
 	return elems;
-}
-
-void Server::mode(Client &client, std::string &command)
-{
-	std::string cmd, sMode, name, mode, params, modes, signe, msg;
-	std::istringstream iss(command);
-	iss >> cmd >> name >> mode;
-	cmd = "";
-	getline(iss, params);
-	!params.empty() ? params = params.substr(1) : "";
-	std::vector<std::string> parameters = split(params, ' ');
-	std::vector<std::string>::iterator it = parameters.begin();
-	Channel &chan = find_channel(name);
-	if (chan.get_name() == channel_note_found.get_name())
-	{
-		msg = ERR_NOSUCHCHANNEL(client.get_nickname(), chan.get_name(), host_ip);
-		send(client.getSocket(), msg.c_str(), msg.length(), 0);
-		return;
-	}
-	if (!chan.in_channel(client))
-	{
-		msg = ERR_NOTONCHANNEL(client.get_nickname(), chan.get_name(), host_ip);
-		send(client.getSocket(), msg.c_str(), msg.length(), 0);
-		return;
-	}
-
-	if (mode[0] != '-' && mode[0] != '+')
-		return;
-	signe += mode[0];
-	int i = 1;
-	for (; i < (int)mode.length(); i++)
-	{
-		if (mode[i] == '-' || mode[i] == '+')
-		{
-			signe = mode[i];
-			continue;
-		}
-		else
-		{
-			sMode = signe + mode[i];
-			if ((signe == "-" || mode[i] == 'i' || mode[i] == 't') && mode[i] != 'o')
-				handle_mode(client, chan, sMode, "", modes, cmd);
-			else
-			{
-				if (it != parameters.end())
-				{
-					handle_mode(client, chan, sMode, *it, modes, cmd);
-					it++;
-				}
-				else
-					handle_mode(client, chan, sMode, "", modes, cmd);
-			}
-		}
-	}
-	if (!cmd.empty())
-	{
-		msg = RPL_MODESET(client.get_nickname(), chan.get_name(), modes, cmd);
-		chan.broadcast_message(client, msg, 0);
-	}
-}
-
-void Server::serveOp(Client &client , std::string pass)
-{
-	std::string client_add = inet_ntoa(client.getAddress().sin_addr);
-	std::string msg;
-	if (client_add == "127.0.0.1" && pass == OPER_PASS)
-	{
-		_server_operators.push_back(client);
-	}
-	else if (pass !=OPER_PASS)
-	{
-		msg = ERR_PASSWDMISMATCH(client.get_nickname(), host_ip);
-		send(client.getSocket(), msg.c_str(), msg.length(), 0);
-	}
-	else if(client_add != "127.0.0.1")
-	{
-		std::cout<<client_add<<"  "<<host_ip<<std::endl;
-		msg = ":"+server_name + " 491 "+ client.get_nickname()+" :No O-lines for your host\r\n";
-		send(client.getSocket(), msg.c_str(), msg.length(), 0);
-	}
 }
 
 bool Server::isIrcOP(Client &client)

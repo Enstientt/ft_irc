@@ -12,7 +12,7 @@ OBJS_B = $(SRCS_B:.cpp=.o)
 
 FLAGS = -Wall -Wextra -Werror -std=c++98
 
-CC = g++
+CC = c++
 
 all: $(NAME)
 

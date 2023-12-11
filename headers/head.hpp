@@ -9,7 +9,7 @@
 #define RPL_NICK(oclient, uclient, client) (": " + oclient + "!" + uclient + "@" + adress +" NICK " + client + "\r\n")
 #define ERR_NICKNAMEINUSE(client, nickname) (": 433 " + client + " " + nickname + " :Nickname is already in use.\r\n")
 #define RPL_WELCOME(user_forma, nickname) (": 001 " + nickname + " :Welcome " + nickname + " to the Internet Relay Chat " + user_forma + "\r\n")
-#define RPL_YOURHOST(client, servername) (": 002 " + client + " :Your host is " + servername + "\r\n")
+#define RPL_YOURHOST(servername)(": 002 Your host is "+ servername+", available Commands MODE((+/-)itklo) PRIVMSG PASS NICK USER JOIN KICK INVITE OPER BOTE \r\n")
 #define RPL_CREATED(client, datetime) (": 003 " + client + " :This server was created " + datetime + "\r\n")
 #define ERR_NEEDMOREPARAMS(client, command, adress)(":"+adress+" 461 " + client + " " + command + " :Not enough parameters.\r\n")
 #define ERR_PASSWDMISMATCH(client, adress) (":"+adress+" 464 " + client + " :Password incorrect\r\n")
@@ -42,6 +42,3 @@
 #define ERR_UNKNOWNMODE(nickname, mode)(": 472 " + nickname + " :is unknown mode" + mode +" to me\r\n")
 #define ERR_NOTAUTHENTICATED(serverName, client)( ":" + serverName + " 451 " + client + " :You have not registered\r\n")
 #endif
-// // #define IRC_JOIN_MSG(nick, channel,users, topic)( ": 331 " + nick + " " + channel + " :"+topic+"\r\n" \
-//         + ": 353 " +  nick + " = " + channel + " :" + users + "\r\n" \
-//         +": 366 "+ nick + " " + channel + " :End of /NAMES list.\r\n")
